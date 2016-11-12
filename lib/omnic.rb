@@ -1,4 +1,7 @@
-#Main
+# omnic.rb
+#
+# Author::  Kyle Mullins
+
 require 'discordrb'
 require 'configatron/core'
 require 'redis'
@@ -30,7 +33,11 @@ module Omnic
   def self.load_configuration
     load 'config.rb'
     Omnic.config.handlers_list.each do |handler_file|
-      load handler_file
+      begin
+        load handler_file
+      rescue StandardError => e
+        logger.warn("Failed to load handler file #{handler_file}: #{e}\n\t#{e.backtrace.join("\n\t")}")
+      end
     end
   end
 
@@ -78,6 +85,7 @@ def configure
   yield Omnic.config
 end
 
+#Main
 should_restart = false
 
 begin
@@ -105,11 +113,11 @@ begin
         should_restart = true
         break
       when 'commands'
-        puts 'Loaded commands: ' + Omnic.bot.commands.keys.join(', ')
+        puts "Loaded commands: #{Omnic.bot.commands.keys.join(', ')}"
       when 'servers'
-        puts 'Connected servers: ' + Omnic.bot.servers.values.map(&:name)
+        puts "Connected servers: #{Omnic.bot.servers.values.map(&:name).join(', ')}"
       when 'threads'
-        puts 'Live threads: ' + Thread.list.count
+        puts "Live threads: #{Thread.list.count}"
     end
   end
 rescue StandardError => e

@@ -3,12 +3,24 @@
 # Author::	Kyle Mullins
 
 class CommandHandler
-  def self.command(command, command_method, *args)
-    #if args.has_key?(:limit)
+  def self.command(command, command_method, **args)
+    limit_action = args.dig(:limit, :action)
+    args[:limit].delete(:action) unless limit_action.nil?
 
-    Omnic.bot.command command, *args do |triggering_event, *other_args|
+    if args.has_key?(:limit)
+      Omnic.rate_limiter.bucket(command, **(args[:limit]))
+    end
+
+    Omnic.bot.command command, **args do |triggering_event, *other_args|
       handler = create_handler(triggering_event)
-      handler.send(command_method, triggering_event, *other_args)
+      limit_scope = get_server(triggering_event) || get_user(triggering_event)
+      time_remaining = Omnic.rate_limiter.rate_limited?(command, limit_scope)
+
+      if time_remaining #This will be false when not rate limited
+        handler.send(limit_action, triggering_event, time_remaining) unless limit_action.nil?
+      else
+        handler.send(command_method, triggering_event, *other_args)
+      end
     end
   end
 
