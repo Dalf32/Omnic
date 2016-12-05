@@ -7,7 +7,10 @@ require 'configatron/core'
 require 'redis'
 require 'redis/namespace'
 require 'logger'
+
 require_relative 'omnic/handlers/command_handler'
+require_relative 'omnic/ext/bot_ext'
+require_relative 'omnic/ext/permissions_ext'
 
 module Omnic
   def self.config
@@ -15,7 +18,8 @@ module Omnic
   end
 
   def self.bot
-    @@bot ||= Discordrb::Commands::CommandBot.new(token: config.bot_token, client_id: config.client_id, prefix: config.command_prefix)
+    @@bot ||= Discordrb::Commands::CommandBot.new(token: config.bot_token, client_id: config.client_id, prefix: config.command_prefix,
+        advanced_functionality: config.advanced_commands)
   end
 
   def self.redis
@@ -41,12 +45,12 @@ module Omnic
     end
   end
 
-  def self.create_worker_thread(&block)
-    Thread.new(&block).tap{ |thread| thread_list << thread }
+  def self.create_worker_thread(thread_name, &block)
+    Thread.new(&block).tap{ |thread| thread_list[thread_name] = thread }
   end
 
   def self.kill_worker_threads
-    thread_list.each do |thread|
+    thread_list.values.each do |thread|
       thread.kill
       thread.join
     end
@@ -54,10 +58,22 @@ module Omnic
     thread_list.clear
   end
 
+  def self.get_worker_thread(thread_name)
+    thread_list[thread_name]
+  end
+
+  def self.alive_workers
+    thread_list.values.count(&:alive?)
+  end
+
+  def self.dead_workers
+    thread_list.count - alive_workers
+  end
+
   private
 
   def self.thread_list
-    @@thread_list ||= []
+    @@thread_list ||= {}
   end
 
   def self.setup_redis
@@ -87,6 +103,9 @@ end
 
 #Main
 should_restart = false
+
+Discordrb::Bot.prepend(BotExt)
+Discordrb::Permissions.extend(PermissionsExt)
 
 begin
   Omnic.load_configuration
@@ -118,6 +137,8 @@ begin
         puts "Connected servers: #{Omnic.bot.servers.values.map(&:name).join(', ')}"
       when 'threads'
         puts "Live threads: #{Thread.list.count}"
+      when 'workers'
+        puts "Alive workers: #{Omnic.alive_workers}\nDead workers: #{Omnic.dead_workers}"
     end
   end
 rescue StandardError => e

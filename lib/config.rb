@@ -4,6 +4,7 @@ configure do |config|
   config.bot_token = '<bot_token>>'
   config.client_id = '<client_id>'
   config.command_prefix = '!'
+  config.advanced_commands = true
 
   config.log_level = 'INFO'
   config.log_format = "[%{datetime} %{severity}] %{message}\n"
