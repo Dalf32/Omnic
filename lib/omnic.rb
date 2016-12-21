@@ -2,6 +2,12 @@
 #
 # Author::  Kyle Mullins
 
+begin
+  load 'rbnacl_conf.rb'
+rescue LoadError => e
+  #We are ok if this file doesn't exist, it is only needed if you want to use voice functionality
+end
+
 require 'discordrb'
 require 'configatron/core'
 require 'redis'
@@ -14,7 +20,7 @@ require_relative 'omnic/ext/permissions_ext'
 
 module Omnic
   def self.config
-    @@config ||= Configatron::RootStore.new
+    @@config ||= default_config
   end
 
   def self.bot
@@ -34,8 +40,14 @@ module Omnic
     @@logger ||= init_logger
   end
 
-  def self.load_configuration
-    load 'config.rb'
+  def self.load_configuration(config_file)
+    begin
+      load config_file
+    rescue LoadError, StandardError => e
+      logger.fatal("Failed to load configuration file #{config_file}: #{e}\n\t#{e.backtrace.join("\n\t")}")
+      return false
+    end
+
     Omnic.config.handlers_list.each do |handler_file|
       begin
         load handler_file
@@ -43,6 +55,8 @@ module Omnic
         logger.warn("Failed to load handler file #{handler_file}: #{e}\n\t#{e.backtrace.join("\n\t")}")
       end
     end
+
+    true
   end
 
   def self.create_worker_thread(thread_name, &block)
@@ -87,13 +101,25 @@ module Omnic
 
   def self.init_logger
     Logger.new(STDOUT).tap do |log|
-      log.level = config.has_key?(:log_level) ? config.log_level : Logger::INFO
+      log.level = config.log_level
       log.formatter = proc do |severity, datetime, progname, message|
-        formatted_datetime = config.has_key?(:date_format) ? datetime.strftime(config.date_format) : datetime
-        format = config.has_key?(:log_format) ? config.log_format : "%{datetime} %{severity} - %{message}\n"
+        formatted_datetime = datetime.strftime(config.date_format)
+        format = config.log_format
         format % { severity: severity, datetime: formatted_datetime, progname: progname, message: message }
       end
     end
+  end
+
+  def self.default_config
+    config = Configatron::RootStore.new
+    config.date_format = '%Y-%m-%d %H:%M:%S'
+    config.log_format = "%{datetime} %{severity} - %{message}\n"
+    config.command_prefix = '!'
+    config.advanced_commands = false
+    config.handlers_list = []
+    config.log_level = Logger::INFO
+    config.restart_on_error = true
+    config
   end
 end
 
@@ -107,8 +133,12 @@ should_restart = false
 Discordrb::Bot.prepend(BotExt)
 Discordrb::Permissions.extend(PermissionsExt)
 
+config_file = ARGV.empty? ? 'config.rb' : ARGV[0]
+
 begin
-  Omnic.load_configuration
+  init_completed = false
+
+  break unless Omnic.load_configuration(config_file)
   Omnic.redis.ping
   Omnic.logger.info('Connected to Redis') if Omnic.redis.connected?
 
@@ -116,11 +146,12 @@ begin
   Omnic.bot.run(:async)
   Omnic.logger.info('Started.')
 
+  init_completed = true
   should_quit = false
 
   until should_quit
     print '>> '
-    input = gets.chomp
+    input = STDIN.gets.chomp
 
     case input
       when 'quit', 'close', 'exit', 'stop'
@@ -142,15 +173,17 @@ begin
     end
   end
 rescue StandardError => e
-  Omnic.logger.error(e)
+  Omnic.logger.error("#{e}\n\t#{e.backtrace.join("\n\t")}")
   should_restart = Omnic.config.restart_on_error
 ensure
-  Omnic.logger.info('Stopping bot...')
-  Omnic.kill_worker_threads
-  Omnic.bot.gateway.kill
-  Omnic.bot.sync
-  Omnic.bot.clear!
-  Omnic.logger.info('Stopped.')
+  if init_completed
+    Omnic.logger.info('Stopping bot...')
+    Omnic.kill_worker_threads
+    Omnic.bot.gateway.kill
+    Omnic.bot.sync
+    Omnic.bot.clear!
+    Omnic.logger.info('Stopped.')
+  end
 end while should_restart
 
 puts 'Goodbye!'
