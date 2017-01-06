@@ -7,11 +7,19 @@ class CommandHandler
     limit_action = args.dig(:limit, :action)
     args[:limit].delete(:action) unless limit_action.nil?
 
+    pm_enabled = args[:pm_enabled] != false
+    args.delete(:pm_enabled)
+
     if args.has_key?(:limit)
       Omnic.rate_limiter.bucket(command, **(args[:limit]))
     end
 
     Omnic.bot.command command, **args do |triggering_event, *other_args|
+      if is_pm?(triggering_event) && !pm_enabled
+        triggering_event.message.reply("Command #{command} cannot be used in DMs.")
+        return
+      end
+
       unless command_allowed?(command, triggering_event)
         triggering_event.message.reply("Command #{command} is not allowed in this channel.")
         return
@@ -73,7 +81,7 @@ class CommandHandler
     Omnic.logger
   end
 
-  def is_pm?(message_event)
+  def self.is_pm?(message_event)
     message_event.server.nil?
   end
 

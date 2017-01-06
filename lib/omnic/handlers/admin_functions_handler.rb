@@ -3,11 +3,13 @@
 # Author::	Kyle Mullins
 
 class AdminFunctionsHandler < CommandHandler
-  command :limitcmd, :limit_command, min_args: 3, required_permissions: [:administrator],
+  command :limitcmd, :limit_command, min_args: 3, required_permissions: [:administrator], pm_enabled: false,
       description: 'If the second argument is allow/whitelist, limits the given command name so that it can only be used in the listed Channel(s) on this Server; ' +
           'if it is deny/blacklist, limits the given Command name so that it can not be used in the listed Channel(s) on this Server.'
-  command :limitclr, :clear_command_limits, min_args: 1, required_permissions: [:administrator],
+  command :limitclr, :clear_command_limits, min_args: 1, required_permissions: [:administrator], pm_enabled: false,
       description: 'Removes all channel limits for the given Command name on this Server.'
+  command :inviteurl, :invite_url, required_permissions: [:administrator],
+      description: 'Generates a URL which can be used to invite this bot to a server.'
 
   def redis_name
     :admin
@@ -15,7 +17,6 @@ class AdminFunctionsHandler < CommandHandler
 
   def limit_command(event, command, allow_deny, *channel_list)
     error_message = nil
-    error_message = 'This command cannot be used in a Private Message.' if is_pm?(event)
     error_message = 'Second parameter must be one of the following: allow, deny, whitelist, blacklist.' unless %w(allow deny whitelist blacklist).include?(allow_deny)
     error_message = "#{command} is not a recognized command." unless bot.commands.keys.include?(command.to_sym)
     error_message = 'You cannot limit that command' if command == 'limitcmd'
@@ -47,6 +48,10 @@ class AdminFunctionsHandler < CommandHandler
 
     clear_lists(command)
     "All limits cleared for command #{command}"
+  end
+
+  def invite_url(_event)
+    bot.invite_url
   end
 
   private

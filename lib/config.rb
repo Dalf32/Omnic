@@ -4,7 +4,7 @@ configure do |config|
   config.bot_token = '<bot_token>>'
   config.client_id = '<client_id>'
   config.command_prefix = '!'
-  config.advanced_commands = true
+  config.advanced_commands = false
 
   config.log_level = 'INFO'
   config.log_format = "[%{datetime} %{severity}] %{message}\n"
@@ -21,6 +21,11 @@ configure do |config|
 
   config.handlers_list = [
       'omnic/handlers/greeting_handler.rb',
+      'omnic/handlers/echo_handler.rb',
       'omnic/handlers/admin_functions_handler.rb'
   ]
+
+  config.handlers.echo do |echo|
+    echo.prefix = '~'
+  end
 end
