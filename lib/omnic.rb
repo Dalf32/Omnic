@@ -51,7 +51,7 @@ module Omnic
     Omnic.config.handlers_list.each do |handler_file|
       begin
         load handler_file
-      rescue StandardError => e
+      rescue LoadError, StandardError => e
         logger.warn("Failed to load handler file #{handler_file}: #{e}\n\t#{e.backtrace.join("\n\t")}")
       end
     end
