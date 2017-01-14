@@ -12,7 +12,7 @@ require 'discordrb'
 require 'configatron/core'
 require 'redis'
 require 'redis/namespace'
-require 'logger'
+require 'logging'
 
 require_relative 'omnic/handlers/command_handler'
 require_relative 'omnic/ext/bot_ext'
@@ -100,25 +100,45 @@ module Omnic
   end
 
   def self.init_logger
-    Logger.new(STDOUT).tap do |log|
-      log.level = config.log_level
-      log.formatter = proc do |severity, datetime, progname, message|
-        formatted_datetime = datetime.strftime(config.date_format)
-        format = config.log_format
-        format % { severity: severity, datetime: formatted_datetime, progname: progname, message: message }
-      end
+    layout = Logging.layouts.pattern(pattern: config.logging.format,
+        date_pattern: config.logging.date_format)
+
+    stdout_log = Logging.appenders.stdout(layout: layout).tap do |log|
+      log.level = config.logging.stdout.level
+    end
+
+    file_log = Logging.appenders.file(config.logging.file.path, layout: layout).tap do |log|
+      log.level = config.logging.file.level
+    end
+
+    Logging.logger['Omnic'].tap do |log|
+      log.add_appenders(stdout_log) if config.logging.stdout.enabled
+      log.add_appenders(file_log) if config.logging.file.enabled
     end
   end
 
   def self.default_config
     config = Configatron::RootStore.new
-    config.date_format = '%Y-%m-%d %H:%M:%S'
-    config.log_format = "%{datetime} %{severity} - %{message}\n"
     config.command_prefix = '!'
     config.advanced_commands = false
     config.handlers_list = []
-    config.log_level = Logger::INFO
     config.restart_on_error = true
+    config.logging do |log|
+      log.date_format = '%Y-%m-%d %H:%M:%S'
+      log.format = "[%d %5l] %m\n"
+      log.stdout do |stdout|
+        stdout.enabled = true
+        stdout.level = :info
+      end
+
+      log.file do |file|
+        file.enabled = false
+        file.level = :info
+        file.path = 'omnic.log'
+        file.rolling = true
+      end
+    end
+
     config
   end
 end
