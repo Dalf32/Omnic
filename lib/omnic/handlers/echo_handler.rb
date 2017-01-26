@@ -49,17 +49,21 @@ class EchoHandler < CommandHandler
   end
 
   def on_message(event)
-    text = event.message.text
-    command_name = text.delete(config.prefix)
-
     return if self.class.is_pm?(event)
 
-    if text.start_with?(config.prefix) && server_redis.smembers(COMMAND_SET_KEY).include?(command_name)
-      reply = server_redis.get(get_command_key(command_name))
+    text = event.message.text
+    full_command = text.scan(/.*[^#{config.prefix}](#{config.prefix}+\w*).*/).flatten.first
 
-      event.message.reply(reply.encode('utf-8-hfs', 'utf-8'))
+    unless full_command.nil?
+      command_name = full_command.delete(config.prefix)
 
-      event.message.delete if text.start_with?(config.prefix * 2)
+      if server_redis.smembers(COMMAND_SET_KEY).include?(command_name)
+        reply = server_redis.get(get_command_key(command_name))
+
+        event.message.reply(reply.encode('utf-8-hfs', 'utf-8'))
+
+        event.message.delete if full_command.start_with?(config.prefix * 2)
+      end
     end
   end
 
