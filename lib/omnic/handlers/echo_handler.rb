@@ -35,7 +35,13 @@ class EchoHandler < CommandHandler
 
     return 'No commands yet!' if commands.empty?
 
-    "Commands: #{config.prefix}#{commands.join(", #{config.prefix}")}"
+    list_text = ''
+
+    commands.sort.each_slice(3) do |row|
+      list_text += row.map{ |command| sprintf("#{config.prefix}%-16s", command) }.join(' ') + "\n"
+    end
+
+    "***Available Commands***\n```#{list_text}```"
   end
 
   def delete_all(_event)
