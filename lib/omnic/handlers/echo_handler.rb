@@ -58,7 +58,7 @@ class EchoHandler < CommandHandler
     return if self.class.is_pm?(event)
 
     text = event.message.text
-    full_command = text.scan(/.*[^#{config.prefix}](#{config.prefix}+\w*).*/).flatten.first
+    full_command = text.scan(/[^#{config.prefix}]*(#{config.prefix}+\w*).*/).flatten.first
 
     unless full_command.nil?
       command_name = full_command.delete(config.prefix)
