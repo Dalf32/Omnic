@@ -15,12 +15,17 @@ class CommandHandler
     end
 
     Omnic.bot.command command, **args do |triggering_event, *other_args|
+      Omnic.logger.info("Command triggered: #{command} #{other_args.join(' ')}")
+      Omnic.logger.debug("  Context: Server #{format_obj(triggering_event.server)}; Channel #{format_obj(triggering_event.channel)}; Author #{format_obj(triggering_event.author)}; PM? #{is_pm?(triggering_event)}")
+
       if is_pm?(triggering_event) && !pm_enabled
+        Omnic.logger.debug('  Command not run because it is not allowed in PMs')
         triggering_event.message.reply("Command #{command} cannot be used in DMs.")
         return
       end
 
       unless command_allowed?(command, triggering_event)
+        Omnic.logger.debug('  Command not run because it is not allowed in this channel')
         triggering_event.message.reply("Command #{command} is not allowed in this channel.")
         return
       end
@@ -30,6 +35,7 @@ class CommandHandler
       time_remaining = Omnic.rate_limiter.rate_limited?(command, limit_scope)
 
       if time_remaining #This will be false when not rate limited
+        Omnic.logger.debug('  Command was rate limited')
         handler.send(limit_action, triggering_event, time_remaining) unless limit_action.nil?
       else
         handler.send(command_method, triggering_event, *other_args)
@@ -39,6 +45,8 @@ class CommandHandler
 
   def self.event(event, event_method, *args)
     Omnic.bot.public_send(event, *args) do |triggering_event, *other_args|
+      Omnic.logger.info("Event triggered: #{event}")
+
       handler = create_handler(triggering_event)
       handler.send(event_method, triggering_event, *other_args)
     end
@@ -139,6 +147,12 @@ class CommandHandler
 
   def self.get_user_namespace(user)
     "USER:#{user.id.to_s}"
+  end
+
+  def self.format_obj(obj)
+    return '' if obj.nil?
+
+    "[#{obj.name}:#{obj.id}]"
   end
 
   def get_config_section(handler)
