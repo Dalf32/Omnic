@@ -33,7 +33,8 @@ configure do |config|
   config.handlers_list = [
       'omnic/handlers/greeting_handler.rb',
       'omnic/handlers/echo_handler.rb',
-      'omnic/handlers/admin_functions_handler.rb'
+      'omnic/handlers/admin_functions_handler.rb',
+      'omnic/handlers/help_handler.rb'
   ]
 
   config.handlers.echo do |echo|

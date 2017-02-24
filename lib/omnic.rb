@@ -25,7 +25,7 @@ module Omnic
 
   def self.bot
     @@bot ||= Discordrb::Commands::CommandBot.new(token: config.bot_token, client_id: config.client_id, prefix: config.command_prefix,
-        advanced_functionality: config.advanced_commands)
+        advanced_functionality: config.advanced_commands, help_command: false)
   end
 
   def self.redis
