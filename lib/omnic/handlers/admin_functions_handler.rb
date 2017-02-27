@@ -10,6 +10,10 @@ class AdminFunctionsHandler < CommandHandler
       description: 'Removes all channel limits for the given Command name on this Server.'
   command :inviteurl, :invite_url, required_permissions: [:administrator],
       description: 'Generates a URL which can be used to invite this bot to a server.'
+  command :features, :list_features, required_permissions: [:administrator],
+      description: 'Lists all the loaded Features and the Commands controlled by them.'
+  command :feature, :set_feature_on_off, min_args: 2, required_permissions: [:administrator], pm_enabled: false,
+      description: 'Enables (on) or Disables (off) the named Feature.'
 
   def redis_name
     :admin
@@ -44,14 +48,29 @@ class AdminFunctionsHandler < CommandHandler
   end
 
   def clear_command_limits(_event, command)
-    return "#{command} is not a recognized command." unless bot.commands.keys.include?(command.to_sym)
+    return "'#{command}' is not a recognized command." unless bot.commands.keys.include?(command.to_sym)
 
     clear_lists(command)
-    "All limits cleared for command #{command}"
+    "All limits cleared for command '#{command}'"
   end
 
   def invite_url(_event)
     bot.invite_url
+  end
+
+  def list_features(_event)
+    Omnic.features.values.map{ |feature| feature.to_s }.join("\n")
+  end
+
+  def set_feature_on_off(_event, feature, on_off)
+    return 'Second parameter must be one of the following: enable, disable, on, off.' unless %w(enable disable on off).include?(on_off)
+    return "#{feature} is not a recognized feature." unless Omnic.features.has_key?(feature.to_sym)
+
+    server_redis = Redis::Namespace.new(CommandHandler::get_server_namespace(@server), redis: Omnic.redis)
+    is_enabled = %w(enable on).include?(on_off)
+    Omnic.features[feature.to_sym].set_enabled(server_redis, is_enabled)
+
+    "Feature '#{feature}' has been #{is_enabled ? 'enabled' : 'disabled'} for this server."
   end
 
   private

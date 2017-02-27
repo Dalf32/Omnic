@@ -2,6 +2,8 @@
 #
 # Author::	Kyle Mullins
 
+require_relative '../model/feature'
+
 class CommandHandler
   def self.command(command, command_method, **args)
     limit_action = args.dig(:limit, :action)
@@ -9,6 +11,11 @@ class CommandHandler
 
     pm_enabled = args[:pm_enabled] != false
     args.delete(:pm_enabled)
+
+    cmd_feature = args[:feature]
+    args.delete(:feature)
+
+    Omnic.features[cmd_feature].add_command(command) if Omnic.features.has_key?(cmd_feature)
 
     if args.has_key?(:limit)
       Omnic.rate_limiter.bucket(command, **(args[:limit]))
@@ -21,6 +28,11 @@ class CommandHandler
       if is_pm?(triggering_event) && !pm_enabled
         Omnic.logger.debug('  Command not run because it is not allowed in PMs')
         triggering_event.message.reply("Command #{command} cannot be used in DMs.")
+        return
+      end
+
+      unless feature_enabled?(Omnic.features[cmd_feature], triggering_event)
+        Omnic.logger.debug('  Command not run because the feature is not enabled on this server')
         return
       end
 
@@ -50,6 +62,10 @@ class CommandHandler
       handler = create_handler(triggering_event)
       handler.send(event_method, triggering_event, *other_args)
     end
+  end
+
+  def self.feature(name, default_enabled: true)
+    Omnic.features[name] = Feature.new(name, default_enabled)
   end
 
   def initialize(bot, server, user)
@@ -97,6 +113,15 @@ class CommandHandler
 
   def self.create_handler(triggering_event)
     self.new(Omnic.bot, get_server(triggering_event), get_user(triggering_event))
+  end
+
+  def self.feature_enabled?(feature, triggering_event)
+    return true if feature.nil?
+
+    server = get_server(triggering_event)
+    return true if server.nil?
+
+    return feature.enabled?(Redis::Namespace.new(get_server_namespace(server), redis: Omnic.redis))
   end
 
   def self.command_allowed?(command, triggering_event)

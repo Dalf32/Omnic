@@ -40,6 +40,10 @@ module Omnic
     @@logger ||= init_logger
   end
 
+  def self.features
+    @@features ||= {}
+  end
+
   def self.load_configuration(config_file)
     begin
       load config_file
@@ -82,6 +86,10 @@ module Omnic
 
   def self.dead_workers
     thread_list.count - alive_workers
+  end
+
+  def self.clear_features
+    features.clear
   end
 
   private
@@ -190,6 +198,8 @@ begin
         puts "Live threads: #{Thread.list.count}"
       when 'workers'
         puts "Alive workers: #{Omnic.alive_workers}\nDead workers: #{Omnic.dead_workers}"
+      when 'features'
+        puts "Features:\n  #{Omnic.features.values.join("\n  ")}"
     end
   end
 rescue StandardError => e
