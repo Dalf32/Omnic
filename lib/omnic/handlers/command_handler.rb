@@ -56,6 +56,8 @@ class CommandHandler
   end
 
   def self.event(event, event_method, *args)
+    #TODO: Support features
+
     Omnic.bot.public_send(event, *args) do |triggering_event, *other_args|
       Omnic.logger.info("Event triggered: #{event}")
 
