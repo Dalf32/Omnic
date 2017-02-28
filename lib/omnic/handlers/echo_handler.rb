@@ -5,7 +5,7 @@
 class EchoHandler < CommandHandler
   feature :echo, default_enabled: true
 
-  event :message, :on_message
+  event :message, :on_message, feature: :echo
 
   command :addcmd, :add_command, min_args: 2, pm_enabled: false, feature: :echo,
       description: 'Adds an echo command such that the bot will reply with the provided output when it receives the command trigger.'

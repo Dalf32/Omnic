@@ -55,11 +55,17 @@ class CommandHandler
     end
   end
 
-  def self.event(event, event_method, *args)
-    #TODO: Support features
+  def self.event(event, event_method, **args)
+    event_feature = args[:feature]
+    args.delete(:feature)
 
-    Omnic.bot.public_send(event, *args) do |triggering_event, *other_args|
+    Omnic.bot.public_send(event, **args) do |triggering_event, *other_args|
       Omnic.logger.info("Event triggered: #{event}")
+
+      unless feature_enabled?(Omnic.features[event_feature], triggering_event)
+        Omnic.logger.debug('  Event not fired because the feature is not enabled on this server')
+        return
+      end
 
       handler = create_handler(triggering_event)
       handler.send(event_method, triggering_event, *other_args)
