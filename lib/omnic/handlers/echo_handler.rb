@@ -60,7 +60,7 @@ class EchoHandler < CommandHandler
   end
 
   def on_message(event)
-    return if self.class.is_pm?(event)
+    return if CommandHandler.is_pm?(event)
 
     text = event.message.text
     full_command = text.scan(/[^#{config.prefix}]*(#{config.prefix}+\w*).*/).flatten.first
