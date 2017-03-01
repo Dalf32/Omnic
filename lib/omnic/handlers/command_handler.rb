@@ -64,7 +64,7 @@ class CommandHandler
 
       unless feature_enabled?(Omnic.features[event_feature], triggering_event)
         Omnic.logger.debug('  Event not fired because the feature is not enabled on this server')
-        return
+        next
       end
 
       handler = create_handler(triggering_event)
