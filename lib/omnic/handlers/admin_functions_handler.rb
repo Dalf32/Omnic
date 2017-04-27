@@ -4,8 +4,8 @@
 
 class AdminFunctionsHandler < CommandHandler
   command :limitcmd, :limit_command, min_args: 3, required_permissions: [:administrator], pm_enabled: false,
-      description: 'If the second argument is allow/whitelist, limits the given command name so that it can only be used in the listed Channel(s) on this Server; ' +
-          'if it is deny/blacklist, limits the given Command name so that it can not be used in the listed Channel(s) on this Server.'
+      description: 'If the second argument is allow/whitelist, limits the given command name so that it can only be used in the listed Channel(s) on this Server; '\
+                   'if it is deny/blacklist, limits the given Command name so that it can not be used in the listed Channel(s) on this Server.'
   command :limitclr, :clear_command_limits, min_args: 1, required_permissions: [:administrator], pm_enabled: false,
       description: 'Removes all channel limits for the given Command name on this Server.'
   command :inviteurl, :invite_url, required_permissions: [:administrator],
@@ -21,7 +21,7 @@ class AdminFunctionsHandler < CommandHandler
 
   def limit_command(event, command, allow_deny, *channel_list)
     error_message = nil
-    error_message = 'Second parameter must be one of the following: allow, deny, whitelist, blacklist.' unless %w(allow deny whitelist blacklist).include?(allow_deny)
+    error_message = 'Second parameter must be one of the following: allow, deny, whitelist, blacklist.' unless %w[allow deny whitelist blacklist].include?(allow_deny)
     error_message = "#{command} is not a recognized command." unless bot.commands.keys.include?(command.to_sym)
     error_message = 'You cannot limit that command' if command == 'limitcmd'
 
@@ -38,9 +38,9 @@ class AdminFunctionsHandler < CommandHandler
 
     return error_message unless error_message.nil?
 
-    channel_ids = channel_list.map{ |channel_name| bot.find_channel(channel_name, event.server.name, type: 0) }.flatten.map(&:id)
+    channel_ids = channel_list.map { |channel_name| bot.find_channel(channel_name, event.server.name, type: 0) }.flatten.map(&:id)
 
-    if %w(allow whitelist).include?(allow_deny)
+    if %w[allow whitelist].include?(allow_deny)
       whitelist_channels(command, channel_ids)
     else
       blacklist_channels(command, channel_ids)
@@ -59,15 +59,15 @@ class AdminFunctionsHandler < CommandHandler
   end
 
   def list_features(_event)
-    Omnic.features.values.map{ |feature| feature.to_s }.join("\n")
+    Omnic.features.values.map(&:to_s).join("\n")
   end
 
   def set_feature_on_off(_event, feature, on_off)
-    return 'Second parameter must be one of the following: enable, disable, on, off.' unless %w(enable disable on off).include?(on_off)
-    return "#{feature} is not a recognized feature." unless Omnic.features.has_key?(feature.to_sym)
+    return 'Second parameter must be one of the following: enable, disable, on, off.' unless %w[enable disable on off].include?(on_off)
+    return "#{feature} is not a recognized feature." unless Omnic.features.key?(feature.to_sym)
 
-    server_redis = Redis::Namespace.new(CommandHandler::get_server_namespace(@server), redis: Omnic.redis)
-    is_enabled = %w(enable on).include?(on_off)
+    server_redis = Redis::Namespace.new(CommandHandler.get_server_namespace(@server), redis: Omnic.redis)
+    is_enabled = %w[enable on].include?(on_off)
     Omnic.features[feature.to_sym].set_enabled(server_redis, is_enabled)
 
     "Feature '#{feature}' has been #{is_enabled ? 'enabled' : 'disabled'} for this server."

@@ -4,8 +4,8 @@
 
 begin
   load 'rbnacl_conf.rb'
-rescue LoadError => e
-  #We are ok if this file doesn't exist, it is only needed if you want to use voice functionality
+rescue LoadError
+  # We are ok if this file doesn't exist, it is only needed if you want to use voice functionality
 end
 
 require 'discordrb'
@@ -64,7 +64,7 @@ module Omnic
   end
 
   def self.create_worker_thread(thread_name, &block)
-    Thread.new(&block).tap{ |thread| thread_list[thread_name] = thread }
+    Thread.new(&block).tap { |thread| thread_list[thread_name] = thread }
   end
 
   def self.kill_worker_threads
@@ -92,19 +92,19 @@ module Omnic
     features.clear
   end
 
-  private
+  # Private Class Methods
 
   def self.thread_list
     @@thread_list ||= {}
   end
 
   def self.setup_redis
-    if config.redis.has_key?(:url)
-      params = { url: config.redis.url }
-      params[:timeout] = config.redis.timeout if config.redis.has_key?(:timeout)
+    return nil unless config.redis.key?(:url)
 
-      Redis.new(**params)
-    end
+    params = { url: config.redis.url }
+    params[:timeout] = config.redis.timeout if config.redis.key?(:timeout)
+
+    Redis.new(**params)
   end
 
   def self.init_logger
@@ -149,13 +149,15 @@ module Omnic
 
     config
   end
+
+  private_class_method :thread_list, :setup_redis, :init_logger, :default_config
 end
 
 def configure
   yield Omnic.config
 end
 
-#Main
+# Main
 should_restart = false
 
 Discordrb::Bot.prepend(BotExt)
@@ -182,28 +184,30 @@ begin
     input = STDIN.gets.chomp
 
     case input
-      when 'quit', 'close', 'exit', 'stop'
-        should_quit = true
-        should_restart = false
-        break
-      when 'restart'
-        should_quit = true
-        should_restart = true
-        break
-      when 'commands'
-        puts "Loaded commands: #{Omnic.bot.commands.keys.join(', ')}"
-      when 'servers'
-        puts "Connected servers: #{Omnic.bot.servers.values.map(&:name).join(', ')}"
-      when 'threads'
-        puts "Live threads: #{Thread.list.count}"
-      when 'workers'
-        puts "Alive workers: #{Omnic.alive_workers}\nDead workers: #{Omnic.dead_workers}"
-      when 'features'
-        puts "Features:\n  #{Omnic.features.values.join("\n  ")}"
+    when 'quit', 'close', 'exit', 'stop'
+      should_quit = true
+      should_restart = false
+      break
+    when 'restart'
+      should_quit = true
+      should_restart = true
+      break
+    when 'commands'
+      puts "Loaded commands: #{Omnic.bot.commands.keys.join(', ')}"
+    when 'servers'
+      puts "Connected servers: #{Omnic.bot.servers.values.map(&:name).join(', ')}"
+    when 'threads'
+      puts "Live threads: #{Thread.list.count}"
+    when 'workers'
+      puts "Alive workers: #{Omnic.alive_workers}\nDead workers: #{Omnic.dead_workers}"
+    when 'features'
+      puts "Features:\n  #{Omnic.features.values.join("\n  ")}"
+    else
+      puts 'Unrecognized command.'
     end
   end
-rescue StandardError => e
-  Omnic.logger.error("#{e}\n\t#{e.backtrace.join("\n\t")}")
+rescue StandardError => err
+  Omnic.logger.error("#{err}\n\t#{err.backtrace.join("\n\t")}")
   should_restart = Omnic.config.restart_on_error
 ensure
   if init_completed

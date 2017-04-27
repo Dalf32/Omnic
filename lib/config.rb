@@ -1,4 +1,4 @@
-#Config
+# Config
 
 configure do |config|
   config.bot_token = '<bot_token>>'
@@ -19,7 +19,7 @@ configure do |config|
       file.enabled = true
       file.path = 'omnic.log'
       file.level = :debug
-      file.rolling = false #Not supported yet
+      file.rolling = false # Not supported yet
     end
   end
 
@@ -31,10 +31,10 @@ configure do |config|
   end
 
   config.handlers_list = [
-      'omnic/handlers/greeting_handler.rb',
-      'omnic/handlers/echo_handler.rb',
-      'omnic/handlers/admin_functions_handler.rb',
-      'omnic/handlers/help_handler.rb'
+    'omnic/handlers/greeting_handler.rb',
+    'omnic/handlers/echo_handler.rb',
+    'omnic/handlers/admin_functions_handler.rb',
+    'omnic/handlers/help_handler.rb'
   ]
 
   config.handlers.echo do |echo|

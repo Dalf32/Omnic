@@ -15,17 +15,15 @@ class CommandHandler
     cmd_feature = args[:feature]
     args.delete(:feature)
 
-    Omnic.features[cmd_feature].add_command(command) if Omnic.features.has_key?(cmd_feature)
+    Omnic.features[cmd_feature].add_command(command) if Omnic.features.key?(cmd_feature)
 
-    if args.has_key?(:limit)
-      Omnic.rate_limiter.bucket(command, **(args[:limit]))
-    end
+    Omnic.rate_limiter.bucket(command, **(args[:limit])) if args.key?(:limit)
 
     Omnic.bot.command command, **args do |triggering_event, *other_args|
       Omnic.logger.info("Command triggered: #{command} #{other_args.join(' ')}")
-      Omnic.logger.debug("  Context: Server #{format_obj(triggering_event.server)}; Channel #{format_obj(triggering_event.channel)}; Author #{format_obj(triggering_event.author)}; PM? #{is_pm?(triggering_event)}")
+      Omnic.logger.debug("  Context: Server #{format_obj(triggering_event.server)}; Channel #{format_obj(triggering_event.channel)}; Author #{format_obj(triggering_event.author)}; PM? #{pm?(triggering_event)}")
 
-      if is_pm?(triggering_event) && !pm_enabled
+      if pm?(triggering_event) && !pm_enabled
         Omnic.logger.debug('  Command not run because it is not allowed in PMs')
         triggering_event.message.reply("Command #{command} cannot be used in DMs.")
         return
@@ -46,7 +44,7 @@ class CommandHandler
       limit_scope = get_server(triggering_event) || get_user(triggering_event)
       time_remaining = Omnic.rate_limiter.rate_limited?(command, limit_scope)
 
-      if time_remaining #This will be false when not rate limited
+      if time_remaining # This will be false when not rate limited
         Omnic.logger.debug('  Command was rate limited')
         handler.send(limit_action, triggering_event, time_remaining) unless limit_action.nil?
       else
@@ -83,6 +81,7 @@ class CommandHandler
   end
 
   protected
+
   attr_accessor :bot
 
   def thread(thread_name, &block)
@@ -113,11 +112,19 @@ class CommandHandler
     Omnic.logger
   end
 
-  def self.is_pm?(message_event)
+  def self.pm?(message_event)
     message_event.server.nil?
   end
 
-  private
+  def self.get_server_namespace(server)
+    "SERVER:#{server.id}"
+  end
+
+  def self.get_user_namespace(user)
+    "USER:#{user.id}"
+  end
+
+  # Private Class Methods
 
   def self.create_handler(triggering_event)
     self.new(Omnic.bot, get_server(triggering_event), get_user(triggering_event))
@@ -129,14 +136,14 @@ class CommandHandler
     server = get_server(triggering_event)
     return true if server.nil?
 
-    return feature.enabled?(Redis::Namespace.new(get_server_namespace(server), redis: Omnic.redis))
+    feature.enabled?(Redis::Namespace.new(get_server_namespace(server), redis: Omnic.redis))
   end
 
   def self.command_allowed?(command, triggering_event)
     server = get_server(triggering_event)
     return true if server.nil?
 
-    key_template = "#{get_server_namespace(server)}:admin:%{type}:#{command.to_s}"
+    key_template = "#{get_server_namespace(server)}:admin:%{type}:#{command}"
     channel_whitelist_key = key_template % { type: 'channel_whitelist' }
     channel_blacklist_key = key_template % { type: 'channel_blacklist' }
     channel = get_channel(triggering_event)
@@ -162,10 +169,6 @@ class CommandHandler
     end
   end
 
-  def self.get_server_namespace(server)
-    "SERVER:#{server.id.to_s}"
-  end
-
   def self.get_channel(triggering_event)
     triggering_event.respond_to?(:channel) ? triggering_event.channel : nil
   end
@@ -178,15 +181,16 @@ class CommandHandler
     end
   end
 
-  def self.get_user_namespace(user)
-    "USER:#{user.id.to_s}"
-  end
-
   def self.format_obj(obj)
     return '' if obj.nil?
 
     "[#{obj.name}:#{obj.id}]"
   end
+
+  private_class_method :create_handler, :feature_enabled?, :command_allowed?, :get_server,
+                       :get_channel, :get_user, :format_obj
+
+  private
 
   def get_config_section(handler)
     Omnic.config.handlers[handler.config_name] if handler.respond_to? :config_name

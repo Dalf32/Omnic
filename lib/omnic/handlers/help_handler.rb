@@ -10,13 +10,13 @@ class HelpHandler < CommandHandler
 
     return show_command_help(commands_list, command_name.first) unless command_name.empty?
 
-    command_list = commands_list.select{ |cmd_pair| command_enabled?(cmd_pair) }.
-        map{ |cmd_pair| "`#{cmd_pair.first}`" }.join(', ')
+    command_list = commands_list.select { |cmd_pair| command_enabled?(cmd_pair) }
+                                .map { |cmd_pair| "`#{cmd_pair.first}`" }.join(', ')
     "**Available commands:**\n#{command_list}"
   end
 
   def show_command_help(commands_list, command_name)
-    command = commands_list.detect{ |cmd_pair| cmd_pair.first.to_s == command_name }
+    command = commands_list.detect { |cmd_pair| cmd_pair.first.to_s == command_name }
 
     return "No command called #{command_name}" if command.nil?
 
@@ -28,7 +28,7 @@ class HelpHandler < CommandHandler
   private
 
   def find_command_feature(command_name)
-    Omnic.features.values.find{ |f| f.has_command?(command_name.to_sym) }
+    Omnic.features.values.find { |f| f.has_command?(command_name.to_sym) }
   end
 
   def command_enabled?(command_name)
@@ -38,7 +38,7 @@ class HelpHandler < CommandHandler
 
     return true if feature.nil?
 
-    server_redis = Redis::Namespace.new(CommandHandler::get_server_namespace(@server), redis: Omnic.redis)
+    server_redis = Redis::Namespace.new(CommandHandler.get_server_namespace(@server), redis: Omnic.redis)
     feature.enabled?(server_redis)
   end
 end

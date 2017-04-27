@@ -3,8 +3,8 @@
 # Author::  Kyle Mullins
 
 class Feature
-  FEATURE_ON = 'on'
-  FEATURE_OFF = 'off'
+  FEATURE_ON = 'on'.freeze
+  FEATURE_OFF = 'off'.freeze
 
   attr_reader :name, :default_enabled
 
@@ -15,12 +15,14 @@ class Feature
   end
 
   def add_command(command_name)
-    @commands<<command_name
+    @commands << command_name
   end
 
   def has_command?(command_name)
     @commands.include?(command_name)
   end
+
+  alias :command? :has_command?
 
   def enabled?(server_redis)
     return true if @default_enabled && !server_redis.exists(feature_key)

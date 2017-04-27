@@ -23,7 +23,7 @@ class EchoHandler < CommandHandler
     :echo
   end
 
-  def add_command(event, command, *output)
+  def add_command(_event, command, *output)
     server_redis.sadd(COMMAND_SET_KEY, command)
     server_redis.append(get_command_key(command), output.join(' '))
     "Command added: #{config.prefix}#{command}"
@@ -43,7 +43,7 @@ class EchoHandler < CommandHandler
     list_text = ''
 
     commands.sort.each_slice(3) do |row|
-      list_text += row.map{ |command| sprintf("#{config.prefix}%-16s", command) }.join(' ') + "\n"
+      list_text += row.map { |command| format("#{config.prefix}%-16s", command) }.join(' ') + "\n"
     end
 
     "***Available Commands***\n```#{list_text}```"
@@ -60,28 +60,28 @@ class EchoHandler < CommandHandler
   end
 
   def on_message(event)
-    return if CommandHandler.is_pm?(event)
+    return if CommandHandler.pm?(event)
 
     text = event.message.text
     full_command = text.scan(/[^#{config.prefix}]*(#{config.prefix}+\w*).*/).flatten.first
 
-    unless full_command.nil?
-      command_name = full_command.delete(config.prefix)
+    return nil if full_command.nil?
 
-      if server_redis.smembers(COMMAND_SET_KEY).include?(command_name)
-        reply = server_redis.get(get_command_key(command_name))
+    command_name = full_command.delete(config.prefix)
 
-        event.message.reply(reply.encode('utf-8-hfs', 'utf-8'))
+    if server_redis.smembers(COMMAND_SET_KEY).include?(command_name)
+      reply = server_redis.get(get_command_key(command_name))
 
-        event.message.delete if full_command.start_with?(config.prefix * 2)
-      end
+      event.message.reply(reply.encode('utf-8-hfs', 'utf-8'))
+
+      event.message.delete if full_command.start_with?(config.prefix * 2)
     end
   end
 
   private
 
-  COMMAND_SET_KEY = 'commands' unless defined? COMMAND_SET_KEY
-  COMMAND_REPLY_KEY = 'command_reply' unless defined? COMMAND_REPLY_KEY
+  COMMAND_SET_KEY = 'commands'.freeze unless defined? COMMAND_SET_KEY
+  COMMAND_REPLY_KEY = 'command_reply'.freeze unless defined? COMMAND_REPLY_KEY
 
   def get_command_key(command)
     COMMAND_REPLY_KEY + ':' + command
