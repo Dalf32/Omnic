@@ -19,7 +19,11 @@ configure do |config|
       file.enabled = true
       file.path = 'omnic.log'
       file.level = :debug
-      file.rolling = false # Not supported yet
+      file.rolling = true
+      file.rolling_name = 'date' # Can be 'date' or 'number'
+      file.roll_age = 'daily' # Can be a number of seconds or one of 'daily', 'weekly', or 'monthly'
+      file.roll_size = 1_048_576 # Size in bytes, either this or roll_age must be specified
+      file.files_to_keep = 7
     end
   end
 

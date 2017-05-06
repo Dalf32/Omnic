@@ -115,9 +115,21 @@ module Omnic
       log.level = config.logging.stdout.level
     end
 
-    file_log = Logging.appenders.file(config.logging.file.path, layout: layout).tap do |log|
-      log.level = config.logging.file.level
+    if config.logging.file.rolling
+      rolling_opts = {
+          layout: layout, roll_by: config.logging.file.rolling_name,
+          keep: config.logging.file.files_to_keep
+      }
+
+      rolling_opts[:age] = config.logging.file.roll_age if config.logging.file.key?(:roll_age)
+      rolling_opts[:size] = config.logging.file.roll_size if config.logging.file.key?(:roll_size)
+
+      file_log = Logging.appenders.rolling_file(config.logging.file.path, **rolling_opts)
+    else
+      file_log = Logging.appenders.file(config.logging.file.path, layout: layout)
     end
+
+    file_log.level = config.logging.file.level
 
     Logging.logger['Omnic'].tap do |log|
       log.add_appenders(stdout_log) if config.logging.stdout.enabled
@@ -143,7 +155,7 @@ module Omnic
         file.enabled = false
         file.level = :info
         file.path = 'omnic.log'
-        file.rolling = true
+        file.rolling = false
       end
     end
 
