@@ -20,28 +20,28 @@ require_relative 'omnic/ext/permissions_ext'
 
 module Omnic
   def self.config
-    @@config ||= default_config
+    @config ||= default_config
   end
 
   def self.bot
-    @@bot ||= Discordrb::Commands::CommandBot.new(token: config.bot_token, client_id: config.client_id, prefix: config.command_prefix,
+    @bot ||= Discordrb::Commands::CommandBot.new(token: config.bot_token, client_id: config.client_id, prefix: config.command_prefix,
         advanced_functionality: config.advanced_commands, help_command: false)
   end
 
   def self.redis
-    @@redis ||= setup_redis
+    @redis ||= setup_redis
   end
 
   def self.rate_limiter
-    @@rate_limiter ||= Discordrb::Commands::SimpleRateLimiter.new
+    @rate_limiter ||= Discordrb::Commands::SimpleRateLimiter.new
   end
 
   def self.logger
-    @@logger ||= init_logger
+    @logger ||= init_logger
   end
 
   def self.features
-    @@features ||= {}
+    @features ||= {}
   end
 
   def self.load_configuration(config_file)
@@ -95,7 +95,7 @@ module Omnic
   # Private Class Methods
 
   def self.thread_list
-    @@thread_list ||= {}
+    @thread_list ||= {}
   end
 
   def self.setup_redis
