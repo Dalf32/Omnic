@@ -17,6 +17,7 @@ require 'logging'
 require_relative 'omnic/handlers/command_handler'
 require_relative 'omnic/ext/bot_ext'
 require_relative 'omnic/ext/permissions_ext'
+require_relative 'omnic/ext/logger_hook'
 
 module Omnic
   def self.config
@@ -174,6 +175,7 @@ should_restart = false
 
 Discordrb::Bot.prepend(BotExt)
 Discordrb::Permissions.extend(PermissionsExt)
+Discordrb::Logger.prepend(LoggerHook)
 
 config_file = ARGV.empty? ? 'config.rb' : ARGV[0]
 
@@ -183,6 +185,8 @@ begin
   break unless Omnic.load_configuration(config_file)
   Omnic.redis.ping
   Omnic.logger.info('Connected to Redis') if Omnic.redis.connected?
+
+  Discordrb::LOGGER.backing_logger = Omnic.logger
 
   Omnic.logger.info('Starting bot...')
   Omnic.bot.run(:async)
