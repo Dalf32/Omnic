@@ -35,14 +35,18 @@ class EchoHandler < CommandHandler
     "Command deleted: #{config.prefix}#{command}"
   end
 
-  def list_commands(_event)
+  def list_commands(_event, *filter)
     commands = server_redis.smembers(COMMAND_SET_KEY)
 
     return 'No commands yet!' if commands.empty?
 
-    list_text = ''
+    filtered_commands = filter.empty? ? commands : commands.select{ |cmd| cmd.include?(filter.first) }
 
-    commands.sort.each_slice(3) do |row|
+    return 'No commands matching filter.' if filtered_commands.empty?
+
+    list_text = filter.empty? ? '' : "Filter: #{filter.first}\n"
+
+    filtered_commands.sort.each_slice(3) do |row|
       list_text += row.map { |command| format("#{config.prefix}%-16s", command) }.join(' ') + "\n"
     end
 
