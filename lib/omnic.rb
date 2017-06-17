@@ -18,6 +18,7 @@ require_relative 'omnic/handlers/command_handler'
 require_relative 'omnic/ext/bot_ext'
 require_relative 'omnic/ext/permissions_ext'
 require_relative 'omnic/ext/logger_hook'
+require_relative 'omnic/ext/syslog'
 
 module Omnic
   def self.config
@@ -112,29 +113,36 @@ module Omnic
     layout = Logging.layouts.pattern(pattern: config.logging.format,
         date_pattern: config.logging.date_format)
 
-    stdout_log = Logging.appenders.stdout(layout: layout).tap do |log|
-      log.level = config.logging.stdout.level
-    end
-
-    if config.logging.file.rolling
-      rolling_opts = {
-          layout: layout, roll_by: config.logging.file.rolling_name,
-          keep: config.logging.file.files_to_keep
-      }
-
-      rolling_opts[:age] = config.logging.file.roll_age if config.logging.file.key?(:roll_age)
-      rolling_opts[:size] = config.logging.file.roll_size if config.logging.file.key?(:roll_size)
-
-      file_log = Logging.appenders.rolling_file(config.logging.file.path, **rolling_opts)
-    else
-      file_log = Logging.appenders.file(config.logging.file.path, layout: layout)
-    end
-
-    file_log.level = config.logging.file.level
-
     Logging.logger['Omnic'].tap do |log|
-      log.add_appenders(stdout_log) if config.logging.stdout.enabled
-      log.add_appenders(file_log) if config.logging.file.enabled
+      if config.logging.stdout.enabled
+        stdout_log = Logging.appenders.stdout(layout: layout, level: config.logging.stdout.level)
+        log.add_appenders(stdout_log)
+      end
+
+      if config.logging.file.enabled
+        if config.logging.file.rolling
+          rolling_opts = {
+              layout: layout, level: config.logging.file.level,
+              roll_by: config.logging.file.rolling_name,
+              keep: config.logging.file.files_to_keep
+          }
+
+          rolling_opts[:age] = config.logging.file.roll_age if config.logging.file.key?(:roll_age)
+          rolling_opts[:size] = config.logging.file.roll_size if config.logging.file.key?(:roll_size)
+
+          file_log = Logging.appenders.rolling_file(config.logging.file.path, **rolling_opts)
+        else
+          file_log = Logging.appenders.file(config.logging.file.path, layout: layout, level: config.logging.file.level)
+        end
+
+        log.add_appenders(file_log)
+      end
+
+      if config.logging.syslog.enabled
+        syslog_log = Logging.appenders.syslog(**config.logging.syslog, layout: layout,
+                                              level: config.logging.syslog.level)
+        log.add_appenders(syslog_log)
+      end
     end
   end
 
@@ -157,6 +165,15 @@ module Omnic
         file.level = :info
         file.path = 'omnic.log'
         file.rolling = false
+      end
+
+      log.syslog do |syslog|
+        syslog.enabled = false
+        syslog.level = :info
+        syslog.hostname = 'localhost'
+        syslog.port = 80
+        syslog.local_hostname = nil
+        syslog.tag = File.basename($0)
       end
     end
 
@@ -218,6 +235,8 @@ begin
       puts "Alive workers: #{Omnic.alive_workers}\nDead workers: #{Omnic.dead_workers}"
     when 'features'
       puts "Features:\n  #{Omnic.features.values.join("\n  ")}"
+    when 'appenders'
+      puts "Logging Appenders:\n  #{Omnic.logger.appenders.join("\n  ")}"
     else
       puts 'Unrecognized command.'
     end
