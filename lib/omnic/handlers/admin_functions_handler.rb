@@ -14,6 +14,10 @@ class AdminFunctionsHandler < CommandHandler
       description: 'Lists all the loaded Features and the Commands controlled by them.'
   command :feature, :set_feature_on_off, min_args: 2, required_permissions: [:administrator], pm_enabled: false,
       description: 'Enables (on) or Disables (off) the named Feature.'
+  command :loglevels, :show_log_levels, required_permissions: [:administrator], # TODO: make this command 'owner-only'
+      description: 'Lists all log appenders and their logging levels.'
+  command :setloglevel, :set_log_level, min_args: 2, required_permissions: [:administrator], # TODO: make this command 'owner-only'
+      description: 'Sets the logging level for the named appender to the given level.'
 
   def redis_name
     :admin
@@ -71,6 +75,22 @@ class AdminFunctionsHandler < CommandHandler
     Omnic.features[feature.to_sym].set_enabled(server_redis, is_enabled)
 
     "Feature '#{feature}' has been #{is_enabled ? 'enabled' : 'disabled'} for this server."
+  end
+
+  def show_log_levels(_event)
+    log.appenders.map { |appender| "#{appender.name}: #{Logging::LEVELS.invert[appender.level]}" }.join("\n")
+  end
+
+  def set_log_level(_event, log_name, log_level)
+    appender = Logging::Appenders[log_name]
+    level = Logging::LEVELS[log_level]
+
+    return "There is no log appender with the name '#{log_name}'." if appender.nil?
+    return "There is no log level with the name '#{log_level}'." if level.nil?
+
+    appender.level = level
+
+    "Log appender #{log_name} now has level #{log_level}."
   end
 
   private
