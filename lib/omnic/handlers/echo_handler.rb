@@ -24,12 +24,15 @@ class EchoHandler < CommandHandler
   end
 
   def add_command(_event, command, *output)
+    is_edit = server_redis.sismember(COMMAND_SET_KEY, command)
     server_redis.sadd(COMMAND_SET_KEY, command)
     server_redis.append(get_command_key(command), output.join(' '))
-    "Command added: #{config.prefix}#{command}"
+    (is_edit ? 'Command edited: ' : 'Command added: ') + "#{config.prefix}#{command}"
   end
 
   def delete_command(_event, command)
+    return "No command matching #{config.prefix}#{command}" unless server_redis.sismember(COMMAND_SET_KEY, command)
+
     server_redis.del(get_command_key(command))
     server_redis.srem(COMMAND_SET_KEY, command)
     "Command deleted: #{config.prefix}#{command}"
