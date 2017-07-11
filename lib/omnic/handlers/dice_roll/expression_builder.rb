@@ -9,8 +9,8 @@ require_relative 'simple_expression'
 require_relative 'parser_error'
 
 class ExpressionBuilder
-  def self.build(expression_str)
-    tokens = tokenize(expression_str)
+  def self.build(expression_str, saved_rolls)
+    tokens = tokenize(expression_str, saved_rolls)
     validate(tokens)
 
     build_expression(to_postfix_form(tokens)).tap do |expression|
@@ -21,15 +21,24 @@ class ExpressionBuilder
   # Private Class methods
 
   OPERATOR_REGEX = /[-%+*\/]/
+  SAVED_ROLL_REGEX = /\A[a-z]+\z/i
 
-  def self.tokenize(expression_str)
-    expression_str.split(/([-+*%\/()])/).reject{ |token| token == '' }
+  def self.tokenize(expression_str, saved_rolls)
+    expression_str.split(/([-+*%\/()])/).reject{ |token| token == '' }.map do |token|
+      if SAVED_ROLL_REGEX === token && saved_rolls.key?(token.downcase)
+        tokenize(saved_rolls[token.downcase], saved_rolls)
+      else
+        token
+      end
+    end.flatten
   end
 
   def self.validate(tokens)
     raise ParserError, 'Invalid expression' if tokens.empty?
     raise ParserError, 'Invalid expression' if OPERATOR_REGEX === tokens.first || OPERATOR_REGEX === tokens.last
     raise ParserError, 'Mismatched parenthesis' unless tokens.count('(') == tokens.count(')')
+
+    tokens.each { |token| raise ParserError, "No saved roll matching #{token}" if SAVED_ROLL_REGEX === token }
   end
 
   def self.to_postfix_form(tokens)
@@ -70,6 +79,8 @@ class ExpressionBuilder
         1
       when /[%*\/]/
         2
+      else
+        0
     end
   end
 
