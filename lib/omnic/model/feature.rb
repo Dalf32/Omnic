@@ -15,6 +15,7 @@ class Feature
   end
 
   def add_command(command_name)
+    return if command?(command_name)
     @commands << command_name
   end
 
@@ -22,7 +23,7 @@ class Feature
     @commands.include?(command_name)
   end
 
-  alias :command? :has_command?
+  alias command? has_command?
 
   def enabled?(server_redis)
     return true if @default_enabled && !server_redis.exists(feature_key)
