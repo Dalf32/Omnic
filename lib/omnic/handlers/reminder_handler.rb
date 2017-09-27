@@ -25,6 +25,7 @@ class ReminderHandler < CommandHandler
     time_str = time_expr.join(' ')
     time_secs = ChronicDuration.parse(time_str, keep_zero: true).truncate
     return "Invalid time: #{time_str}" if time_secs.zero?
+    return "Time too large: #{time_str}" if time_secs >= 2_147_483_647
 
     prompt_for_message(event, time_secs)
 
