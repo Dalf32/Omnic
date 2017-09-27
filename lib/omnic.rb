@@ -16,6 +16,7 @@ require 'logging'
 
 require_relative 'omnic/handlers/command_handler'
 require_relative 'omnic/ext/bot_ext'
+require_relative 'omnic/ext/role_ext'
 require_relative 'omnic/ext/permissions_ext'
 require_relative 'omnic/ext/logger_hook'
 require_relative 'omnic/ext/syslog'
@@ -26,8 +27,14 @@ module Omnic
   end
 
   def self.bot
-    @bot ||= Discordrb::Commands::CommandBot.new(token: config.bot_token, client_id: config.client_id, prefix: config.command_prefix,
-        advanced_functionality: config.advanced_commands, help_command: false)
+    attributes = {
+      token: config.bot_token, client_id: config.client_id,
+      prefix: config.command_prefix,
+      advanced_functionality: config.advanced_commands, help_command: false,
+      no_permission_message: "I don't have permission to perform that action on this Server."
+    }
+
+    @bot ||= Discordrb::Commands::CommandBot.new(attributes)
   end
 
   def self.redis
@@ -193,6 +200,7 @@ should_restart = false
 Discordrb::Bot.prepend(BotExt)
 Discordrb::Permissions.extend(PermissionsExt)
 Discordrb::Logger.prepend(LoggerHook)
+Discordrb::Role.prepend(RoleExt)
 
 config_file = ARGV.empty? ? 'config.rb' : ARGV[0]
 
