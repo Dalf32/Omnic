@@ -36,7 +36,7 @@ class Feature
   end
 
   def to_s
-  "#{@name}: #{@commands.join(', ')}"
+  "`#{@name}`: #{@commands.join(', ')}"
   end
 
   private

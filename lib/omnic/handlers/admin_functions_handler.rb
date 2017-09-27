@@ -8,25 +8,33 @@ class AdminFunctionsHandler < CommandHandler
       description: 'If the second argument is allow/whitelist, limits the given command name so that it can only be used in the listed Channel(s) on this Server; '\
                    'if it is deny/blacklist, limits the given Command name so that it can not be used in the listed Channel(s) on this Server.'
 
-  command :limitclr, :clear_command_limits, min_args: 1, required_permissions: [:administrator],
-      pm_enabled: false, usage: 'limitclr <command>',
+  command :limitclr, :clear_command_limits, min_args: 1, max_args: 1,
+      required_permissions: [:administrator], pm_enabled: false, usage: 'limitclr <command>',
       description: 'Removes all channel limits for the given Command name on this Server.'
 
-  command :inviteurl, :invite_url, required_permissions: [:administrator], usage: 'inviteurl',
+  command :inviteurl, :invite_url, required_permissions: [:administrator],
+      max_args: 0, usage: 'inviteurl',
       description: 'Generates a URL which can be used to invite this bot to a server.'
 
-  command :features, :list_features, required_permissions: [:administrator], usage: 'features',
+  command :features, :list_features, required_permissions: [:administrator],
+      max_args: 0, usage: 'features',
       description: 'Lists all the loaded Features and the Commands controlled by them.'
 
-  command :feature, :set_feature_on_off, min_args: 2, required_permissions: [:administrator],
+  command :feature, :set_feature_on_off, min_args: 2, max_args: 2,
+      required_permissions: [:administrator],
       pm_enabled: false, usage: 'feature <feature> <on/off/enable/disable>',
       description: 'Enables (on) or Disables (off) the named Feature.'
 
-  command :loglevels, :show_log_levels, required_permissions: [:administrator], # TODO: make this command 'owner-only'
-      usage: 'loglevels', description: 'Lists all log appenders and their logging levels.'
+  command :featurestatus, :show_feature_status, min_args: 1, max_args: 1,
+      pm_enabled: false, usage: 'featurestatus <feature>',
+      description: 'Shows whether the named Feature is enabled or disabled.'
 
-  command :setloglevel, :set_log_level, min_args: 2, required_permissions: [:administrator], # TODO: make this command 'owner-only'
-      usage: 'setloglevel <log_name> <log_level>',
+  command :loglevels, :show_log_levels, required_permissions: [:administrator], # TODO: make this command 'owner-only'
+      max_args: 0, usage: 'loglevels',
+      description: 'Lists all log appenders and their logging levels.'
+
+  command :setloglevel, :set_log_level, min_args: 2, max_args: 2,
+      usage: 'setloglevel <log_name> <log_level>', required_permissions: [:administrator], # TODO: make this command 'owner-only'
       description: 'Sets the logging level for the named appender to the given level.'
 
   def redis_name
@@ -78,13 +86,20 @@ class AdminFunctionsHandler < CommandHandler
 
   def set_feature_on_off(_event, feature, on_off)
     return 'Second parameter must be one of the following: enable, disable, on, off.' unless %w[enable disable on off].include?(on_off)
-    return "#{feature} is not a recognized feature." unless Omnic.features.key?(feature.to_sym)
+    return "'#{feature}' is not a recognized feature." unless Omnic.features.key?(feature.to_sym)
 
-    server_redis = Redis::Namespace.new(CommandHandler.get_server_namespace(@server), redis: Omnic.redis)
     is_enabled = %w[enable on].include?(on_off)
     Omnic.features[feature.to_sym].set_enabled(server_redis, is_enabled)
 
     "Feature '#{feature}' has been #{is_enabled ? 'enabled' : 'disabled'} for this server."
+  end
+
+  def show_feature_status(_event, feature)
+    return "'#{feature}' is not a recognized feature." unless Omnic.features.key?(feature.to_sym)
+
+    is_enabled = Omnic.features[feature.to_sym].enabled?(server_redis)
+
+    "Feature '#{feature}' is #{is_enabled ? 'enabled' : 'disabled'} on this Server."
   end
 
   def show_log_levels(_event)
