@@ -3,7 +3,8 @@
 # Author::	Kyle Mullins
 
 class HelpHandler < CommandHandler
-  command :help, :show_help, max_args: 1, description: 'Displays this help text'
+  command :help, :show_help, max_args: 1, description: 'Displays this help text',
+      usage: 'help [command_name]'
 
   def show_help(_event, *command_name)
     commands_list = bot.commands
@@ -16,13 +17,16 @@ class HelpHandler < CommandHandler
   end
 
   def show_command_help(commands_list, command_name)
-    command = commands_list.detect { |cmd_pair| cmd_pair.first.to_s == command_name }
+    command = commands_list[command_name.to_sym]
 
     return "No command called #{command_name}" if command.nil?
 
     return nil unless command_enabled?(command_name)
 
-    "``#{command_name}``: #{command.last.attributes[:description]}"
+    attributes = command.attributes
+    help_text = "`#{command_name}`: #{attributes[:description]}"
+    help_text += "\nUsage: `#{attributes[:usage]}`" unless attributes[:usage].nil?
+    help_text
   end
 
   private
