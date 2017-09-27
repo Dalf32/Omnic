@@ -3,20 +3,30 @@
 # Author::	Kyle Mullins
 
 class AdminFunctionsHandler < CommandHandler
-  command :limitcmd, :limit_command, min_args: 3, required_permissions: [:administrator], pm_enabled: false,
+  command :limitcmd, :limit_command, min_args: 3, required_permissions: [:administrator],
+      pm_enabled: false, usage: 'limitcmd <command> <allow/deny/whitelist/blacklist> <channel> [additional_channels...]',
       description: 'If the second argument is allow/whitelist, limits the given command name so that it can only be used in the listed Channel(s) on this Server; '\
                    'if it is deny/blacklist, limits the given Command name so that it can not be used in the listed Channel(s) on this Server.'
-  command :limitclr, :clear_command_limits, min_args: 1, required_permissions: [:administrator], pm_enabled: false,
+
+  command :limitclr, :clear_command_limits, min_args: 1, required_permissions: [:administrator],
+      pm_enabled: false, usage: 'limitclr <command>',
       description: 'Removes all channel limits for the given Command name on this Server.'
-  command :inviteurl, :invite_url, required_permissions: [:administrator],
+
+  command :inviteurl, :invite_url, required_permissions: [:administrator], usage: 'inviteurl',
       description: 'Generates a URL which can be used to invite this bot to a server.'
-  command :features, :list_features, required_permissions: [:administrator],
+
+  command :features, :list_features, required_permissions: [:administrator], usage: 'features',
       description: 'Lists all the loaded Features and the Commands controlled by them.'
-  command :feature, :set_feature_on_off, min_args: 2, required_permissions: [:administrator], pm_enabled: false,
+
+  command :feature, :set_feature_on_off, min_args: 2, required_permissions: [:administrator],
+      pm_enabled: false, usage: 'feature <feature> <on/off/enable/disable>',
       description: 'Enables (on) or Disables (off) the named Feature.'
+
   command :loglevels, :show_log_levels, required_permissions: [:administrator], # TODO: make this command 'owner-only'
-      description: 'Lists all log appenders and their logging levels.'
+      usage: 'loglevels', description: 'Lists all log appenders and their logging levels.'
+
   command :setloglevel, :set_log_level, min_args: 2, required_permissions: [:administrator], # TODO: make this command 'owner-only'
+      usage: 'setloglevel <log_name> <log_level>',
       description: 'Sets the logging level for the named appender to the given level.'
 
   def redis_name

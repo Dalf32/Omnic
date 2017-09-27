@@ -7,12 +7,19 @@ class EchoHandler < CommandHandler
 
   event :message, :on_message, feature: :echo
 
-  command :addcmd, :add_command, min_args: 2, pm_enabled: false, feature: :echo,
+  command :addcmd, :add_command, min_args: 2, pm_enabled: false,
+      feature: :echo, usage: 'addcmd <command> <output>',
       description: 'Adds an echo command such that the bot will reply with the provided output when it receives the command trigger.'
-  command :delcmd, :delete_command, min_args: 1, max_args: 1, pm_enabled: false, feature: :echo,
+
+  command :delcmd, :delete_command, min_args: 1, max_args: 1, pm_enabled: false,
+      feature: :echo, usage: 'delcmd <command>',
       description: 'Deletes the echo command of the given name.'
-  command :listcmds, :list_commands, pm_enabled: false, feature: :echo, description: 'Lists all the registered echo commands.'
-  command :delall, :delete_all, required_permissions: [:administrator], pm_enabled: false, feature: :echo,
+
+  command :listcmds, :list_commands, pm_enabled: false, feature: :echo,
+      usage: 'listcmds [filter]', description: 'Lists all the registered echo commands.'
+
+  command :delall, :delete_all, required_permissions: [:administrator],
+      pm_enabled: false, feature: :echo, usage: 'delall',
       description: 'Deletes all of the registered echo commands.'
 
   def config_name

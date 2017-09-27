@@ -6,15 +6,18 @@ class LookingForGroupHandler < CommandHandler
   feature :looking_for_group, default_enabled: true
 
   command :lfg, :looking_for_group, feature: :looking_for_group, min_args: 1,
-      pm_enabled: false, description: 'Notifies registered players that you want to play the given game.'
+      pm_enabled: false, usage: 'lfg <game_name>',
+      description: 'Notifies registered players that you want to play the given game.'
 
   command :regforgame, :register_for_game, feature: :looking_for_group,
-      min_args: 1, pm_enabled: false, description: 'Registers you to be notified when people want to play the given game.'
+      min_args: 1, pm_enabled: false, usage: 'regforgame <game_name>',
+      description: 'Registers you to be notified when people want to play the given game.'
 
   command :unregforgame, :unregister_for_game, feature: :looking_for_group,
-      min_args: 1, pm_enabled: false, description: 'Unregisters you for the given game.'
+      min_args: 1, pm_enabled: false, usage: 'unregforgame <game_name>',
+      description: 'Unregisters you for the given game.'
 
-  command :lfggames, :list_lfg_games, feature: :looking_for_group,
+  command :lfggames, :list_lfg_games, feature: :looking_for_group, usage: 'lfggames',
       max_args: 0, pm_enabled: false, description: 'Lists all the games people have registered for.'
 
   def looking_for_group(event, *game_name)

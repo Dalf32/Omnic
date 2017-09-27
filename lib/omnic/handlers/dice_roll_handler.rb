@@ -7,15 +7,21 @@ require_relative 'dice_roll/expression_builder'
 class DiceRollHandler < CommandHandler
   feature :dice, default_enabled: true
 
-  command :roll, :roll_dice, feature: :dice, min_args: 1,
+  command :roll, :roll_dice, feature: :dice, min_args: 1, usage: 'roll <dice_expr>',
       description: 'Parses and rolls the given dice expression, then shows the results.'
+
   command :saveroll, :save_roll, feature: :dice, min_args: 2,
+      usage: 'saveroll <roll_name> <dice_expr>',
       description: 'Saves the given dice expression to the given name, which can then be used on its own or within another expression.'
+
   command :delroll, :delete_roll, feature: :dice, min_args: 1, max_args: 1,
+      usage: 'delroll <roll_name>',
       description: 'Deletes the saved roll with the given name.'
-  command :listrolls, :list_saved_rolls, feature: :dice, max_args: 0,
+
+  command :listrolls, :list_saved_rolls, feature: :dice, max_args: 0, usage: 'listrolls',
       description: 'Lists all of the rolls you have saved.'
-  command :rollhelp, :show_roll_help, feature: :dice, max_args: 0,
+
+  command :rollhelp, :show_roll_help, feature: :dice, max_args: 0, usage: 'rollhelp',
       description: 'Shows an explanation of some of the dice expression syntax.'
 
   def redis_name
