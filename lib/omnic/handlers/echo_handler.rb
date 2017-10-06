@@ -45,22 +45,29 @@ class EchoHandler < CommandHandler
     "Command deleted: #{config.prefix}#{command}"
   end
 
-  def list_commands(_event, *filter)
+  def list_commands(event, *filter)
     commands = server_redis.smembers(COMMAND_SET_KEY)
 
     return 'No commands yet!' if commands.empty?
 
-    filtered_commands = filter.empty? ? commands : commands.select{ |cmd| cmd.include?(filter.first) }
+    filtered_cmds = filter.empty? ? commands : commands.select { |cmd| cmd.include?(filter.first) }
 
-    return 'No commands matching filter.' if filtered_commands.empty?
+    return 'No commands matching filter.' if filtered_cmds.empty?
 
-    list_text = filter.empty? ? '' : "Filter: #{filter.first}\n"
+    total = 0
+    cmds = filtered_cmds.sort.each_slice(3)
+                            .map { |command_row| format_cmd_row(command_row) }
+                            .map { |row_text| [row_text, total += row_text.length] }
+                            .slice_when { |p1, p2| p1.last / 1900 < p2.last / 1900 }
+                            .map { |list_split| list_split.map(&:first) }
+                            .map { |list_split| list_split.join(' ') }
 
-    filtered_commands.sort.each_slice(3) do |row|
-      list_text += row.map { |command| format("#{config.prefix}%-16s", command) }.join(' ') + "\n"
-    end
+    first_msg_text = (filter.empty? ? '' : "Filter: #{filter.first}\n") + cmds[0]
+    event.message.reply("***Available Commands***\n```#{first_msg_text}```")
 
-    "***Available Commands***\n```#{list_text}```"
+    cmds[1..-1].each { |cmd| event.message.reply("```#{cmd}```") }
+
+    nil
   end
 
   def delete_all(_event)
@@ -99,5 +106,13 @@ class EchoHandler < CommandHandler
 
   def get_command_key(command)
     COMMAND_REPLY_KEY + ':' + command
+  end
+
+  def format_cmd_row(command_row)
+    command_row.map { |command| format_listed_cmd(command) }.join(' ') + "\n"
+  end
+
+  def format_listed_cmd(command)
+    format("#{config.prefix}%-16s", command)
   end
 end
