@@ -70,14 +70,25 @@ class EchoHandler < CommandHandler
     nil
   end
 
-  def delete_all(_event)
-    server_redis.smembers(COMMAND_SET_KEY).each do |command_name|
-      server_redis.del(get_command_key(command_name))
+  def delete_all(event)
+    event.message.reply('This will delete all commands, are you sure? (y/n)')
+
+    event.message.await(event.message.id, start_with: /[yn]/i) do |await_event|
+      unless %w[y yes].include?(await_event.message.text.downcase)
+        await_event.message.reply('Ok, commands will not be cleared.')
+        next
+      end
+
+      server_redis.smembers(COMMAND_SET_KEY).each do |command_name|
+        server_redis.del(get_command_key(command_name))
+      end
+
+      server_redis.del(COMMAND_SET_KEY)
+
+      await_event.message.reply('All commands cleared.')
     end
 
-    server_redis.del(COMMAND_SET_KEY)
-
-    'All commands cleared.'
+    nil
   end
 
   def on_message(event)
