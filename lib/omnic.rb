@@ -118,7 +118,7 @@ module Omnic
 
   def self.init_logger
     layout = Logging.layouts.pattern(pattern: config.logging.format,
-        date_pattern: config.logging.date_format)
+                                     date_pattern: config.logging.date_format)
 
     Logging.logger['Omnic'].tap do |log|
       if config.logging.stdout.enabled
@@ -129,24 +129,28 @@ module Omnic
       if config.logging.file.enabled
         if config.logging.file.rolling
           rolling_opts = {
-              layout: layout, level: config.logging.file.level,
-              roll_by: config.logging.file.rolling_name,
-              keep: config.logging.file.files_to_keep
+            layout: layout, level: config.logging.file.level,
+            roll_by: config.logging.file.rolling_name,
+            keep: config.logging.file.files_to_keep
           }
 
           rolling_opts[:age] = config.logging.file.roll_age if config.logging.file.key?(:roll_age)
           rolling_opts[:size] = config.logging.file.roll_size if config.logging.file.key?(:roll_size)
 
-          file_log = Logging.appenders.rolling_file(config.logging.file.path, **rolling_opts)
+          file_log = Logging.appenders.rolling_file(config.logging.file.path,
+                                                    **rolling_opts)
         else
-          file_log = Logging.appenders.file(config.logging.file.path, layout: layout, level: config.logging.file.level)
+          file_log = Logging.appenders.file(config.logging.file.path,
+                                            layout: layout,
+                                            level: config.logging.file.level)
         end
 
         log.add_appenders(file_log)
       end
 
       if config.logging.syslog.enabled
-        syslog_log = Logging.appenders.syslog(**config.logging.syslog, layout: layout,
+        syslog_log = Logging.appenders.syslog(**config.logging.syslog,
+                                              layout: layout,
                                               level: config.logging.syslog.level)
         log.add_appenders(syslog_log)
       end
