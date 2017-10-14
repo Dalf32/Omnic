@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Available Commands</title>
+
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    tr:nth-child(even) {
+      background-color: lightgray;
+    }
+
+    td {
+      width: 25%;
+      padding: 10px;
+      border: 1px solid lightgray;
+    }
+
+    img {
+      max-height: 250px;
+    }
+
+    iframe {
+      height: 250px;
+    }
+
+    div {
+      background-color: darkslategray;
+      color: lightgray;
+      border-radius: 5px;
+      padding: 5px;
+    }
+
+    video {
+      height: 250px;
+    }
+  </style>
+</head>
+<body>
+<h1>Commands available in <%=server%></h1>
+<table>
+  <%table_rows.each do |row|%>
+    <tr>
+      <%row.each do |cmd|%>
+        <td>
+          <b><i><%=prefix%><%=cmd.name%></i></b>
+          <br>
+          <%=render_command(cmd)%>
+        </td>
+      <%end%>
+    </tr>
+  <%end%>
+</table>
+</body>
+</html>

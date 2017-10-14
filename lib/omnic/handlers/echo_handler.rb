@@ -2,6 +2,9 @@
 #
 # Author::	Kyle Mullins
 
+require_relative 'echo/command_store'
+require_relative 'echo/command_html_renderer'
+
 class EchoHandler < CommandHandler
   feature :echo, default_enabled: true
 
@@ -22,6 +25,10 @@ class EchoHandler < CommandHandler
       pm_enabled: false, feature: :echo, usage: 'delall',
       description: 'Deletes all of the registered echo commands.'
 
+  command :previewcmds, :preview_commands, pm_enabled: false, feature: :echo,
+      max_args: 0, usage: 'previewcmds', limit: { delay: 60, action: :on_limit },
+      description: ''
+
   def config_name
     :echo
   end
@@ -31,22 +38,21 @@ class EchoHandler < CommandHandler
   end
 
   def add_command(_event, command, *output)
-    is_edit = server_redis.sismember(COMMAND_SET_KEY, command)
-    server_redis.sadd(COMMAND_SET_KEY, command)
-    server_redis.append(get_command_key(command), output.join(' '))
+    is_edit = command_store.has_command?(command)
+    command_store.add_command(command, output.join(' '))
+
     (is_edit ? 'Command edited: ' : 'Command added: ') + "#{config.prefix}#{command}"
   end
 
   def delete_command(_event, command)
-    return "No command matching #{config.prefix}#{command}" unless server_redis.sismember(COMMAND_SET_KEY, command)
+    return "No command matching #{config.prefix}#{command}" unless command_store.has_command?(command)
 
-    server_redis.del(get_command_key(command))
-    server_redis.srem(COMMAND_SET_KEY, command)
+    command_store.remove_command(command)
     "Command deleted: #{config.prefix}#{command}"
   end
 
   def list_commands(event, *filter)
-    commands = server_redis.smembers(COMMAND_SET_KEY)
+    commands = command_store.command_names
 
     return 'No commands yet!' if commands.empty?
 
@@ -55,12 +61,12 @@ class EchoHandler < CommandHandler
     return 'No commands matching filter.' if filtered_cmds.empty?
 
     total = 0
-    cmds = filtered_cmds.sort.each_slice(3)
-                            .map { |command_row| format_cmd_row(command_row) }
-                            .map { |row_text| [row_text, total += row_text.length] }
-                            .slice_when { |p1, p2| p1.last / 1900 < p2.last / 1900 }
-                            .map { |list_split| list_split.map(&:first) }
-                            .map { |list_split| list_split.join(' ') }
+    cmds = filtered_cmds.each_slice(3)
+                        .map { |command_row| format_cmd_row(command_row) }
+                        .map { |row_text| [row_text, total += row_text.length] }
+                        .slice_when { |p1, p2| p1.last / 1900 < p2.last / 1900 }
+                        .map { |list_split| list_split.map(&:first) }
+                        .map { |list_split| list_split.join(' ') }
 
     first_msg_text = (filter.empty? ? '' : "Filter: #{filter.first}\n") + cmds[0]
     event.message.reply("***Available Commands***\n```#{first_msg_text}```")
@@ -79,13 +85,26 @@ class EchoHandler < CommandHandler
         next
       end
 
-      server_redis.smembers(COMMAND_SET_KEY).each do |command_name|
-        server_redis.del(get_command_key(command_name))
-      end
-
-      server_redis.del(COMMAND_SET_KEY)
+      command_store.clear_commands
 
       await_event.message.reply('All commands cleared.')
+    end
+
+    nil
+  end
+
+  def preview_commands(event)
+    template_file = File.expand_path(File.dirname(__FILE__)) +
+                    '/echo/command_list_template.html.erb'
+
+    renderer = CommandHtmlRenderer.new(template_file)
+                                  .command_prefix(config.prefix)
+                                  .server_name(event.server.name)
+                                  .commands(command_store.commands)
+
+    Tempfile.open(%w[command_list_ .html]) do |outfile|
+      outfile.write(renderer.render)
+      event.channel.send_file(outfile.open)
     end
 
     nil
@@ -101,22 +120,24 @@ class EchoHandler < CommandHandler
 
     command_name = full_command.delete(config.prefix)
 
-    if server_redis.smembers(COMMAND_SET_KEY).include?(command_name)
-      reply = server_redis.get(get_command_key(command_name))
+    return nil unless command_store.has_command?(command_name)
 
-      event.message.reply(reply.encode('utf-8-hfs', 'utf-8'))
+    event.message.reply(command_store.get_reply(command_name))
+    event.message.delete if full_command.start_with?(config.prefix * 2)
+  end
 
-      event.message.delete if full_command.start_with?(config.prefix * 2)
-    end
+  def on_limit(event, time_remaining)
+    time_remaining = time_remaining.ceil
+    message = "Hold your horses! Wait #{time_remaining} more second#{time_remaining == 1 ? '' : 's'} then try again."
+    bot.send_temporary_message(event.message.channel.id, message, time_remaining + 2)
+
+    nil
   end
 
   private
 
-  COMMAND_SET_KEY = 'commands'.freeze unless defined? COMMAND_SET_KEY
-  COMMAND_REPLY_KEY = 'command_reply'.freeze unless defined? COMMAND_REPLY_KEY
-
-  def get_command_key(command)
-    COMMAND_REPLY_KEY + ':' + command
+  def command_store
+    @command_store ||= CommandStore.new(server_redis)
   end
 
   def format_cmd_row(command_row)
