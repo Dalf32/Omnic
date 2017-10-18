@@ -17,7 +17,7 @@ class CommandStore
   end
 
   def commands
-    command_names.map { |cmd| EchoCommand.create(cmd, get_reply(cmd)) }
+    command_names.map { |cmd| EchoCommand.new(cmd, get_reply(cmd)) }
   end
 
   def has_command?(command)
