@@ -101,6 +101,7 @@ class EchoHandler < CommandHandler
                                   .command_prefix(config.prefix)
                                   .server_name(event.server.name)
                                   .commands(command_store.commands)
+                                  .users(event.server.members)
 
     Tempfile.open(%w[command_list_ .html]) do |outfile|
       outfile.write(renderer.render)

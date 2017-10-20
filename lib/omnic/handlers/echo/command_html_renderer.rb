@@ -4,6 +4,14 @@
 
 require 'erb'
 
+require_relative 'text_processing/code_block_processor'
+require_relative 'text_processing/image_link_processor'
+require_relative 'text_processing/youtube_link_processor'
+require_relative 'text_processing/video_link_processor'
+require_relative 'text_processing/bare_link_processor'
+require_relative 'text_processing/user_mention_processor'
+require_relative 'text_processing/plaintext_processor'
+
 class CommandHtmlRenderer
   attr_reader :prefix, :server, :table_rows
 
@@ -26,6 +34,11 @@ class CommandHtmlRenderer
     self
   end
 
+  def users(users)
+    @users = users
+    self
+  end
+
   def render
     ERB.new(@template).result(binding)
   end
@@ -33,16 +46,16 @@ class CommandHtmlRenderer
   private
 
   def render_command(command)
-    if command.image?
-      "<img src=\"#{command.image_url}\">"
-    elsif command.youtube?
-      "<iframe src=\"#{command.youtube_embed_url}\" frameborder=\"0\" allowfullscreen></iframe>"
-    elsif command.code?
-      "<div><code>#{command.reply}</code></div>"
-    elsif command.video?
-      "<video controls><source src=\"#{command.video_url}\" type=\"#{command.video_type}\"></video>"
-    else
-      command.reply
-    end
+    process_chain.process(command.reply).map(&:html).join
+  end
+
+  def process_chain
+    @process_chain ||= CodeBlockProcessor.new
+                                         .link_node(VideoLinkProcessor.new
+                                         .link_node(ImageLinkProcessor.new
+                                         .link_node(YoutubeLinkProcessor.new
+                                         .link_node(BareLinkProcessor.new
+                                         .link_node(UserMentionProcessor.new(@users)
+                                         .link_node(PlaintextProcessor.new))))))
   end
 end
