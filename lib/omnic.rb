@@ -64,6 +64,7 @@ module Omnic
     Omnic.config.handlers_list.each do |handler_file|
       begin
         load handler_file
+        logger.debug("Successfully loaded #{handler_file}")
       rescue LoadError, StandardError => e
         logger.warn("Failed to load handler file #{handler_file}: #{e}\n\t#{e.backtrace.join("\n\t")}")
       end
@@ -238,7 +239,7 @@ begin
       should_restart = true
       break
     when 'commands'
-      puts "Loaded commands: #{Omnic.bot.commands.keys.join(', ')}"
+      puts "Loaded commands: #{Omnic.bot.commands&.keys&.join(', ')}"
     when 'servers'
       puts "Connected servers: #{Omnic.bot.servers.values.map(&:name).join(', ')}"
     when 'threads'
