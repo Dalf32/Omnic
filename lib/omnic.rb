@@ -250,6 +250,8 @@ begin
       puts "Features:\n  #{Omnic.features.values.join("\n  ")}"
     when 'appenders'
       puts "Logging Appenders:\n  #{Omnic.logger.appenders.join("\n  ")}"
+    when 'invite'
+      puts Omnic.bot.invite_url
     else
       puts 'Unrecognized command.'
     end
