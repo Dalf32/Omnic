@@ -46,12 +46,14 @@ class LookingForGroupHandler < CommandHandler
     role = get_role_for_game(event.server, game_name)
     user = event.author
 
+    return "#{game_name} is not a registered game!" if role.nil?
     return "You are not registered for #{game_name}" unless user.role?(role)
 
     user.remove_role(role)
     # role.delete if role.members.empty?
     # TODO: Change to the above when Discordrb next releases
-    role.delete if role_members(event.server, role).empty?
+    members = role_members(event.server, role) - [user]
+    role.delete if members.empty?
 
     "You have been unregistered as a player for #{game_name}"
   end
