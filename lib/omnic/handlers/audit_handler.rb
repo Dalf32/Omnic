@@ -38,15 +38,15 @@ class AuditHandler < CommandHandler
 
     server_redis.set(:audit_channel, channels.first.id)
 
-    "Audit channel has been set to #{channels.first.name}"
+    "Audit channel has been set to ##{channels.first.name}"
   end
 
   def on_member_join(event)
-    post_audit_message('Member Join', user: event.user)
+    post_audit_message('Member Join', user: event.user.distinct)
   end
 
   def on_member_leave(event)
-    post_audit_message('Member Leave', user: event.user)
+    post_audit_message('Member Leave', user: event.user.distinct)
   end
 
   def on_message(event)
