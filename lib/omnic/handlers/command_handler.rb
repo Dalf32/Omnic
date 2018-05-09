@@ -89,7 +89,7 @@ class CommandHandler
   end
 
   def self.pm?(message_event)
-    message_event.server.nil?
+    !message_event.respond_to?(:server) || message_event.server.nil?
   end
 
   def self.get_server_namespace(server)
