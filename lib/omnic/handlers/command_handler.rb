@@ -26,7 +26,7 @@ class CommandHandler
       if pm?(triggering_event) && !pm_enabled
         Omnic.logger.debug('  Command not run because it is not allowed in PMs')
         triggering_event.message.reply("Command #{command} cannot be used in DMs.")
-        return
+        break
       end
 
       unless feature_enabled?(Omnic.features[cmd_feature], triggering_event)
@@ -57,11 +57,19 @@ class CommandHandler
     event_feature = args[:feature]
     args.delete(:feature)
 
+    pm_enabled = args[:pm_enabled] != false
+    args.delete(:pm_enabled)
+
     Omnic.bot.public_send(event, **args) do |triggering_event, *other_args|
-      Omnic.logger.info("Event triggered: #{event}")
+      Omnic.logger.debug("Event triggered: #{event}")
 
       unless feature_enabled?(Omnic.features[event_feature], triggering_event)
         Omnic.logger.debug('  Event not fired because the feature is not enabled on this server')
+        next
+      end
+
+      if pm?(triggering_event) && !pm_enabled
+        Omnic.logger.debug('  Event not fired because it is not enabled in PMs')
         next
       end
 
@@ -78,6 +86,18 @@ class CommandHandler
     @bot = bot
     @server = server
     @user = user
+  end
+
+  def self.pm?(message_event)
+    message_event.server.nil?
+  end
+
+  def self.get_server_namespace(server)
+    "SERVER:#{server.id}"
+  end
+
+  def self.get_user_namespace(user)
+    "USER:#{user.id}"
   end
 
   protected
@@ -110,18 +130,6 @@ class CommandHandler
 
   def log
     Omnic.logger
-  end
-
-  def self.pm?(message_event)
-    message_event.server.nil?
-  end
-
-  def self.get_server_namespace(server)
-    "SERVER:#{server.id}"
-  end
-
-  def self.get_user_namespace(user)
-    "USER:#{user.id}"
   end
 
   # Private Class Methods

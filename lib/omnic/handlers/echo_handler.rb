@@ -8,7 +8,7 @@ require_relative 'echo/command_html_renderer'
 class EchoHandler < CommandHandler
   feature :echo, default_enabled: true
 
-  event :message, :on_message, feature: :echo
+  event :message, :on_message, feature: :echo, pm_enabled: false
 
   command :addcmd, :add_command, min_args: 2, pm_enabled: false,
       feature: :echo, usage: 'addcmd <command> <output>',
