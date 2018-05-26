@@ -89,7 +89,7 @@ class AdminFunctionsHandler < CommandHandler
     return "'#{feature}' is not a recognized feature." unless Omnic.features.key?(feature.to_sym)
 
     is_enabled = %w[enable on].include?(on_off)
-    Omnic.features[feature.to_sym].set_enabled(server_redis, is_enabled)
+    Omnic.features[feature.to_sym].set_enabled(feature_redis, is_enabled)
 
     "Feature '#{feature}' has been #{is_enabled ? 'enabled' : 'disabled'} for this server."
   end
@@ -97,7 +97,7 @@ class AdminFunctionsHandler < CommandHandler
   def show_feature_status(_event, feature)
     return "'#{feature}' is not a recognized feature." unless Omnic.features.key?(feature.to_sym)
 
-    is_enabled = Omnic.features[feature.to_sym].enabled?(server_redis)
+    is_enabled = Omnic.features[feature.to_sym].enabled?(feature_redis)
 
     "Feature '#{feature}' is #{is_enabled ? 'enabled' : 'disabled'} on this Server."
   end
@@ -119,6 +119,11 @@ class AdminFunctionsHandler < CommandHandler
   end
 
   private
+
+  def feature_redis
+    Redis::Namespace.new(CommandHandler.get_server_namespace(@server),
+                         redis: Omnic.redis)
+  end
 
   def whitelist_channels(command, channel_ids)
     server_redis.sadd(whitelist_key(command), channel_ids)
