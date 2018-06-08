@@ -8,26 +8,29 @@ require_relative 'echo/command_html_renderer'
 class EchoHandler < CommandHandler
   feature :echo, default_enabled: true
 
-  event :message, :on_message, feature: :echo, pm_enabled: false
+  event(:message, :on_message)
+    .feature(:echo).pm_enabled(false)
 
-  command :addcmd, :add_command, min_args: 2, pm_enabled: false,
-      feature: :echo, usage: 'addcmd <command> <output>',
-      description: 'Adds an echo command such that the bot will reply with the provided output when it receives the command trigger.'
+  command(:addcmd, :add_command)
+    .min_args(2).pm_enabled(false).feature(:echo)
+    .usage('addcmd <command> <output>')
+    .description('Adds an echo command such that the bot will reply with the provided output when it receives the command trigger.')
 
-  command :delcmd, :delete_command, min_args: 1, max_args: 1, pm_enabled: false,
-      feature: :echo, usage: 'delcmd <command>',
-      description: 'Deletes the echo command of the given name.'
+  command(:delcmd, :delete_command)
+    .args_range(1, 1).pm_enabled(false).feature(:echo).usage('delcmd <command>')
+    .description('Deletes the echo command of the given name.')
 
-  command :listcmds, :list_commands, pm_enabled: false, feature: :echo,
-      usage: 'listcmds [filter]', description: 'Lists all the registered echo commands.'
+  command(:listcmds, :list_commands)
+    .pm_enabled(false).feature(:echo).usage('listcmds [filter]')
+    .description('Lists all the registered echo commands.')
 
-  command :delall, :delete_all, required_permissions: [:administrator],
-      pm_enabled: false, feature: :echo, usage: 'delall',
-      description: 'Deletes all of the registered echo commands.'
+  command(:delall, :delete_all)
+    .permissions(:administrator).pm_enabled(false).feature(:echo)
+    .usage('delall').description('Deletes all of the registered echo commands.')
 
-  command :previewcmds, :preview_commands, pm_enabled: false, feature: :echo,
-      max_args: 0, usage: 'previewcmds', limit: { delay: 60, action: :on_limit },
-      description: ''
+  command(:previewcmds, :preview_commands)
+    .pm_enabled(false).feature(:echo).max_args(0).usage('previewcmds')
+    .limit(delay: 60, action: :on_limit).description('')
 
   def config_name
     :echo
@@ -112,7 +115,7 @@ class EchoHandler < CommandHandler
   end
 
   def on_message(event)
-    return if CommandHandler.pm?(event)
+    return if pm?(event)
 
     text = event.message.text
     full_command = text.scan(/[^#{config.prefix}]*(#{config.prefix}+\w*).*/).flatten.first

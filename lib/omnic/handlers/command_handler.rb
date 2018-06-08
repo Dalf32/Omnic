@@ -3,78 +3,24 @@
 # Author::	Kyle Mullins
 
 require_relative '../model/feature'
+require_relative '../model/omnic_command'
+require_relative '../model/omnic_event'
+require_relative '../model/command_helper'
 
 class CommandHandler
+  include CommandHelper
+
   def self.command(command, command_method, **args)
-    limit_action = args.dig(:limit, :action)
-    args[:limit].delete(:action) unless limit_action.nil?
-
-    pm_enabled = args[:pm_enabled] != false
-    args.delete(:pm_enabled)
-
-    cmd_feature = args[:feature]
-    args.delete(:feature)
-
-    Omnic.features[cmd_feature].add_command(command) if Omnic.features.key?(cmd_feature)
-
-    Omnic.rate_limiter.bucket(command, **(args[:limit])) if args.key?(:limit)
-
-    Omnic.bot.command command, **args do |triggering_event, *other_args|
-      Omnic.logger.info("Command triggered: #{command} #{other_args.join(' ')}")
-      Omnic.logger.debug("  Context: Server #{format_obj(triggering_event.server)}; Channel #{format_obj(triggering_event.channel)}; Author #{format_obj(triggering_event.author)}; PM? #{pm?(triggering_event)}")
-
-      if pm?(triggering_event) && !pm_enabled
-        Omnic.logger.debug('  Command not run because it is not allowed in PMs')
-        triggering_event.message.reply("Command #{command} cannot be used in DMs.")
-        break
-      end
-
-      unless feature_enabled?(Omnic.features[cmd_feature], triggering_event)
-        Omnic.logger.debug('  Command not run because the feature is not enabled on this server')
-        return
-      end
-
-      unless command_allowed?(command, triggering_event)
-        Omnic.logger.debug('  Command not run because it is not allowed in this channel')
-        triggering_event.message.reply("Command #{command} is not allowed in this channel.")
-        return
-      end
-
-      handler = create_handler(triggering_event)
-      limit_scope = get_server(triggering_event) || get_user(triggering_event)
-      time_remaining = Omnic.rate_limiter.rate_limited?(command, limit_scope)
-
-      if time_remaining # This will be false when not rate limited
-        Omnic.logger.debug('  Command was rate limited')
-        handler.send(limit_action, triggering_event, time_remaining) unless limit_action.nil?
-      else
-        handler.send(command_method, triggering_event, *other_args)
-      end
+    OmnicCommand.new(self, command, command_method).tap do |cmd|
+      cmd.other_params(args)
+      Omnic.commands << cmd
     end
   end
 
   def self.event(event, event_method, **args)
-    event_feature = args[:feature]
-    args.delete(:feature)
-
-    pm_enabled = args[:pm_enabled] != false
-    args.delete(:pm_enabled)
-
-    Omnic.bot.public_send(event, **args) do |triggering_event, *other_args|
-      Omnic.logger.debug("Event triggered: #{event}")
-
-      unless feature_enabled?(Omnic.features[event_feature], triggering_event)
-        Omnic.logger.debug('  Event not fired because the feature is not enabled on this server')
-        next
-      end
-
-      if pm?(triggering_event) && !pm_enabled
-        Omnic.logger.debug('  Event not fired because it is not enabled in PMs')
-        next
-      end
-
-      handler = create_handler(triggering_event)
-      handler.send(event_method, triggering_event, *other_args)
+    OmnicEvent.new(self, event, event_method).tap do |evt|
+      evt.other_params(args)
+      Omnic.events << evt
     end
   end
 
@@ -86,18 +32,6 @@ class CommandHandler
     @bot = bot
     @server = server
     @user = user
-  end
-
-  def self.pm?(message_event)
-    !message_event.respond_to?(:server) || message_event.server.nil?
-  end
-
-  def self.get_server_namespace(server)
-    "SERVER:#{server.id}"
-  end
-
-  def self.get_user_namespace(user)
-    "USER:#{user.id}"
   end
 
   protected
@@ -113,98 +47,35 @@ class CommandHandler
   end
 
   def global_redis
-    get_redis_namespace(self, 'GLOBAL')
+    redis_namespace(self, 'GLOBAL')
   end
 
   def server_redis
-    get_redis_namespace(self, CommandHandler.get_server_namespace(@server)) unless @server.nil?
+    redis_namespace(self, get_server_namespace(@server)) unless @server.nil?
   end
 
   def user_redis
-    get_redis_namespace(self, CommandHandler.get_user_namespace(@user)) unless @user.nil?
+    redis_namespace(self, get_user_namespace(@user)) unless @user.nil?
   end
 
   def config
-    get_config_section(self)
+    config_section(self)
   end
 
   def log
     Omnic.logger
   end
 
-  # Private Class Methods
-
-  def self.create_handler(triggering_event)
-    self.new(Omnic.bot, get_server(triggering_event), get_user(triggering_event))
-  end
-
-  def self.feature_enabled?(feature, triggering_event)
-    return true if feature.nil?
-
-    server = get_server(triggering_event)
-    return true if server.nil?
-
-    feature.enabled?(Redis::Namespace.new(get_server_namespace(server), redis: Omnic.redis))
-  end
-
-  def self.command_allowed?(command, triggering_event)
-    server = get_server(triggering_event)
-    return true if server.nil?
-
-    key_template = "#{get_server_namespace(server)}:admin:%{type}:#{command}"
-    channel_whitelist_key = key_template % { type: 'channel_whitelist' }
-    channel_blacklist_key = key_template % { type: 'channel_blacklist' }
-    channel = get_channel(triggering_event)
-
-    unless channel.nil?
-      if Omnic.redis.exists(channel_whitelist_key) &&
-          !Omnic.redis.sismember(channel_whitelist_key, channel.id.to_s)
-        return false
-      elsif Omnic.redis.exists(channel_blacklist_key) &&
-          Omnic.redis.sismember(channel_blacklist_key, channel.id.to_s)
-        return false
-      end
-    end
-
-    true
-  end
-
-  def self.get_server(triggering_event)
-    if triggering_event.respond_to?(:server) && !triggering_event.server.nil?
-      triggering_event.server
-    elsif triggering_event.respond_to?(:channel) && !triggering_event.channel.server.nil?
-      triggering_event.channel.server
-    end
-  end
-
-  def self.get_channel(triggering_event)
-    triggering_event.respond_to?(:channel) ? triggering_event.channel : nil
-  end
-
-  def self.get_user(triggering_event)
-    if triggering_event.respond_to?(:author) && !triggering_event.author.nil?
-      triggering_event.author
-    elsif triggering_event.respond_to?(:user) && !triggering_event.user.nil?
-      triggering_event.user
-    end
-  end
-
-  def self.format_obj(obj)
-    return '' if obj.nil?
-
-    "[#{obj.name}:#{obj.id}]"
-  end
-
-  private_class_method :create_handler, :feature_enabled?, :command_allowed?, :get_server,
-                       :get_channel, :get_user, :format_obj
-
   private
 
-  def get_config_section(handler)
-    Omnic.config.handlers[handler.config_name] if handler.respond_to? :config_name
+  def config_section(handler)
+    return nil unless handler.respond_to? :config_name
+    Omnic.config.handlers[handler.config_name]
   end
 
-  def get_redis_namespace(handler, namespace_id)
-    Redis::Namespace.new(namespace_id + ':' + handler.redis_name.to_s, redis: Omnic.redis) if handler.respond_to? :redis_name
+  def redis_namespace(handler, namespace_id)
+    return nil unless handler.respond_to? :redis_name
+    Redis::Namespace.new("#{namespace_id}:#{handler.redis_name}",
+                         redis: Omnic.redis)
   end
 end

@@ -61,14 +61,9 @@ module Omnic
       return false
     end
 
-    Omnic.config.handlers_list.each do |handler_file|
-      begin
-        load handler_file
-        logger.debug("Successfully loaded #{handler_file}")
-      rescue LoadError, StandardError => e
-        logger.warn("Failed to load handler file #{handler_file}: #{e}\n\t#{e.backtrace.join("\n\t")}")
-      end
-    end
+    load_handlers
+    load_commands
+    load_events
 
     true
   end
@@ -100,6 +95,14 @@ module Omnic
 
   def self.clear_features
     features.clear
+  end
+
+  def self.commands
+    @commands ||= []
+  end
+
+  def self.events
+    @events ||= []
   end
 
   # Private Class Methods
@@ -192,7 +195,39 @@ module Omnic
     config
   end
 
-  private_class_method :thread_list, :setup_redis, :init_logger, :default_config
+  def self.load_handlers
+    config.handlers_list.each do |handler_file|
+      begin
+        load handler_file
+        logger.debug("Successfully loaded #{handler_file}")
+      rescue LoadError, StandardError => e
+        logger.warn("Failed to load handler file #{handler_file}: #{e}\n\t#{e.backtrace.join("\n\t")}")
+      end
+    end
+  end
+
+  def self.load_commands
+    commands.map do |cmd|
+      begin
+        cmd.register
+      rescue StandardError => e
+        Omnic.logger.error("Failed to register #{cmd.handler_class} Command #{cmd.name}, #{e.message}")
+      end
+    end
+  end
+
+  def self.load_events
+    events.map do |evt|
+      begin
+        evt.register
+      rescue StandardError => e
+        Omnic.logger.error("Failed to register #{evt.handler_class} Event #{evt.event}, #{e.message}")
+      end
+    end
+  end
+
+  private_class_method :thread_list, :setup_redis, :init_logger,
+                       :default_config, :load_handlers
 end
 
 def configure

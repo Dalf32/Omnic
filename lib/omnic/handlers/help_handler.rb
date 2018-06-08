@@ -3,8 +3,9 @@
 # Author::	Kyle Mullins
 
 class HelpHandler < CommandHandler
-  command :help, :show_help, max_args: 1, description: 'Displays this help text',
-      usage: 'help [command_name]'
+  command(:help, :show_help)
+    .max_args(1).usage('help [command_name]')
+    .description('Displays this help text')
 
   def show_help(_event, *command_name)
     commands_list = bot.commands
@@ -42,7 +43,7 @@ class HelpHandler < CommandHandler
 
     return true if feature.nil?
 
-    server_redis = Redis::Namespace.new(CommandHandler.get_server_namespace(@server), redis: Omnic.redis)
+    server_redis = Redis::Namespace.new(get_server_namespace(@server), redis: Omnic.redis)
     feature.enabled?(server_redis)
   end
 end

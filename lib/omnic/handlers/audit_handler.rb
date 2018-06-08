@@ -3,20 +3,22 @@
 # AUTHOR::  Kyle Mullins
 
 class AuditHandler < CommandHandler
-  command :auditchannel, :set_audit_channel, min_args: 1, max_args: 1,
-      pm_enabled: false, required_permissions: [:administrator],
-      usage: 'auditchannel [channel_name]',
-      description: 'Sets or clears the channel for audit messages.'
+  feature :audit, default_enabled: false
 
-  event :member_join, :on_member_join, pm_enabled: false
+  command(:auditchannel, :set_audit_channel)
+    .feature(:audit).args_range(1, 1).pm_enabled(false)
+    .permissions(:administrator).usage('auditchannel [channel_name]')
+    .description('Sets or clears the channel for audit messages.')
 
-  event :member_leave, :on_member_leave, pm_enabled: false
+  event(:member_join, :on_member_join).feature(:audit).pm_enabled(false)
 
-  event :message, :on_message, pm_enabled: false
+  event(:member_leave, :on_member_leave).feature(:audit).pm_enabled(false)
 
-  event :message_delete, :on_message_delete, pm_enabled: false
+  event(:message, :on_message).feature(:audit).pm_enabled(false)
 
-  event :message_edit, :on_message_edit, pm_enabled: false
+  event(:message_delete, :on_message_delete).feature(:audit).pm_enabled(false)
+
+  event(:message_edit, :on_message_edit).feature(:audit).pm_enabled(false)
 
   def config_name
     :audit

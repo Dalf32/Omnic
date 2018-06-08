@@ -7,9 +7,10 @@ require 'chronic_duration'
 class ReminderHandler < CommandHandler
   feature :reminders, default_enabled: true
 
-  command :remindmein, :remind_me_in, feature: :reminders, min_args: 1,
-      usage: 'remindmein <time_expr>',
-      description: 'Reminds you of something in the given amount of time.'
+  command(:remindmein, :remind_me_in)
+    .feature(:reminders).min_args(1).usage('remindmein <time_expr>')
+    .description('Reminds you of something in the given amount of time.')
+
   # TODO: command :remindmeat
 
   event :ready, :start_reminder_thread

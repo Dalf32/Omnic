@@ -4,7 +4,7 @@
 
 module LoggerHook
   attr_accessor :backing_logger
-  
+
   def simple_write(_stream, message, mode, _thread_name, _timestamp)
     if @backing_logger.nil?
       return super
