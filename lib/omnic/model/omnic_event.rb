@@ -13,6 +13,7 @@ class OmnicEvent
     @handler_class = handler_class
     @event = event
     @method_name = method_name
+    @pm_enabled = true
     @other_params = {}
     @error = nil
   end

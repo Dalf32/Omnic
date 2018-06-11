@@ -13,6 +13,7 @@ class OmnicCommand
     @handler_class = handler_class
     @name = name
     @method_name = method_name
+    @pm_enabled = true
     @other_params = {}
     @error = nil
   end
