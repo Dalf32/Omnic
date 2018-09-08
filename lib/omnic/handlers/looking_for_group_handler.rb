@@ -10,15 +10,10 @@ class LookingForGroupHandler < CommandHandler
     .usage('lfg <game_name>')
     .description('Notifies registered players that you want to play the given game.')
 
-  command(:regforgame, :register_for_game)
+  command(:lfgregister, :register_for_game)
     .feature(:looking_for_group).min_args(1).pm_enabled(false)
     .usage('regforgame <game_name>')
-    .description('Registers you to be notified when people want to play the given game.')
-
-  command(:unregforgame, :unregister_for_game)
-    .feature(:looking_for_group).min_args(1).pm_enabled(false)
-    .usage('unregforgame <game_name>')
-    .description('Unregisters you for the given game.')
+    .description('Registers you to be notified when people want to play the given game. If you are already registered, unregisters instead.')
 
   command(:lfggames, :list_lfg_games)
     .feature(:looking_for_group).usage('lfggames').max_args(0).pm_enabled(false)
@@ -39,27 +34,10 @@ class LookingForGroupHandler < CommandHandler
            create_role_for_game(event.server, game_name)
     user = event.author
 
-    return "You are already registered for #{game_name}" if user.role?(role)
+    return unregister_for_game(user, game_name, role) if user.role?(role)
 
     user.add_role(role)
     "You have been registered as a player for #{game_name}"
-  end
-
-  def unregister_for_game(event, *game_name)
-    game_name = game_name.join(' ')
-    role = get_role_for_game(event.server, game_name)
-    user = event.author
-
-    return "#{game_name} is not a registered game!" if role.nil?
-    return "You are not registered for #{game_name}" unless user.role?(role)
-
-    user.remove_role(role)
-    # role.delete if role.members.empty?
-    # TODO: Change to the above when Discordrb next releases
-    members = role_members(event.server, role) - [user]
-    role.delete if members.empty?
-
-    "You have been unregistered as a player for #{game_name}"
   end
 
   def list_lfg_games(event)
@@ -71,6 +49,16 @@ class LookingForGroupHandler < CommandHandler
   end
 
   private
+
+  def unregister_for_game(user, game_name, role)
+    user.remove_role(role)
+    # role.delete if role.members.empty?
+    # TODO: Change to the above when Discordrb next releases
+    members = role_members(@server, role) - [user]
+    role.delete if members.empty?
+
+    "You have been unregistered as a player for #{game_name}"
+  end
 
   def get_game_roles(server)
     server.roles.select { |role| role.name.end_with?('-lfg') }.uniq
