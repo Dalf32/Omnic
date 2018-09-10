@@ -18,6 +18,10 @@ class OmnicEvent
     @error = nil
   end
 
+  def id
+    "#{@handler_class} #{@event}"
+  end
+
   def feature(feature)
     @feature = feature
     @error = "Invalid Feature: #{@feature}" unless Omnic.features.key?(@feature)
@@ -39,7 +43,7 @@ class OmnicEvent
     raise @error if error?
 
     Omnic.bot.public_send(@event, **@other_params) do |trig_event, *other_args|
-      Omnic.logger.debug("Event triggered: #{@handler_class} #{@event} #{other_args.join(' ')}")
+      Omnic.logger.debug("Event triggered: #{id} #{other_args.join(' ')}")
       Omnic.logger.debug("  Context: Server #{format_obj(get_server(trig_event))}; Channel #{format_obj(get_channel(trig_event))}; Author #{format_obj(get_user(trig_event))}; PM? #{pm?(trig_event)}")
 
       if pm?(trig_event) && !@pm_enabled

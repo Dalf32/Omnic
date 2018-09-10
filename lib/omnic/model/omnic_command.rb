@@ -18,6 +18,10 @@ class OmnicCommand
     @error = nil
   end
 
+  def id
+    "#{@handler_class} #{@name}"
+  end
+
   def feature(feature)
     @feature = feature
 
@@ -83,7 +87,7 @@ class OmnicCommand
     raise @error if error?
 
     Omnic.bot.command @name, **@other_params do |trig_event, *other_args|
-      Omnic.logger.info("Command triggered: #{@handler_class} #{@name} #{other_args.join(' ')}")
+      Omnic.logger.info("Command triggered: #{id} #{other_args.join(' ')}")
       Omnic.logger.debug("  Context: Server #{format_obj(trig_event.server)}; Channel #{format_obj(trig_event.channel)}; Author #{format_obj(trig_event.author)}; PM? #{pm?(trig_event)}")
 
       if pm?(trig_event) && !@pm_enabled

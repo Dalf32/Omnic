@@ -68,17 +68,17 @@ module Omnic
     true
   end
 
-  def self.create_worker_thread(thread_name, &block)
-    Thread.new(&block).tap { |thread| thread_list[thread_name] = thread }
+  def self.shutdown
+    kill_worker_threads
+    commands.clear
+    events.clear
+    bot.clear!
+    bot.gateway.kill
+    bot.sync
   end
 
-  def self.kill_worker_threads
-    thread_list.values.each do |thread|
-      thread.kill
-      thread.join
-    end
-
-    thread_list.clear
+  def self.create_worker_thread(thread_name, &block)
+    Thread.new(&block).tap { |thread| thread_list[thread_name] = thread }
   end
 
   def self.get_worker_thread(thread_name)
@@ -109,6 +109,15 @@ module Omnic
 
   def self.thread_list
     @thread_list ||= {}
+  end
+
+  def self.kill_worker_threads
+    thread_list.values.each do |thread|
+      thread.kill
+      thread.join
+    end
+
+    thread_list.clear
   end
 
   def self.setup_redis
@@ -227,7 +236,7 @@ module Omnic
   end
 
   private_class_method :thread_list, :setup_redis, :init_logger,
-                       :default_config, :load_handlers
+                       :default_config, :load_handlers, :kill_worker_threads
 end
 
 def configure
@@ -274,7 +283,7 @@ begin
       should_restart = true
       break
     when 'commands'
-      puts "Loaded commands: #{Omnic.bot.commands&.keys&.join(', ')}"
+      puts "Loaded commands: #{Omnic.commands.map(&:id).join(', ')}"
     when 'servers'
       puts "Connected servers: #{Omnic.bot.servers.values.map(&:name).join(', ')}"
     when 'threads'
@@ -287,6 +296,8 @@ begin
       puts "Logging Appenders:\n  #{Omnic.logger.appenders.join("\n  ")}"
     when 'invite'
       puts Omnic.bot.invite_url
+    when 'events'
+      puts "Registered events: #{Omnic.events.map(&:id).join(', ')}"
     else
       puts 'Unrecognized command.'
     end
@@ -297,10 +308,7 @@ rescue StandardError => err
 ensure
   if init_completed
     Omnic.logger.info('Stopping bot...')
-    Omnic.kill_worker_threads
-    Omnic.bot.gateway.kill
-    Omnic.bot.sync
-    Omnic.bot.clear!
+    Omnic.shutdown
     Omnic.logger.info('Stopped.')
   end
 end while should_restart
