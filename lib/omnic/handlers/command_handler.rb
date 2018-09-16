@@ -6,6 +6,7 @@ require_relative '../model/feature'
 require_relative '../model/omnic_command'
 require_relative '../model/omnic_event'
 require_relative '../model/command_helper'
+require_relative '../model/result'
 
 class CommandHandler
   include CommandHelper
@@ -66,6 +67,28 @@ class CommandHandler
     Omnic.logger
   end
 
+  def find_channel(channel_text)
+    channels = search_channels(channel_text)
+    result = Result.new
+
+    result.error = "#{channel_text} does not match any channels on this server" if channels.empty?
+    result.error = "#{channel_text} matches more than one channel on this server" if channels.count > 1
+
+    result.value = channels.first if result.success?
+    result
+  end
+
+  def find_user(user_text)
+    users = search_users(user_text)
+    result = Result.new
+
+    result.error = "#{user_text} does not match any members of this server" if users.empty?
+    result.error = "#{user_text} matches multiple members of this server" if users.count > 1
+
+    result.value = users.first if result.success?
+    result
+  end
+
   private
 
   def config_section(handler)
@@ -77,5 +100,22 @@ class CommandHandler
     return nil unless handler.respond_to? :redis_name
     Redis::Namespace.new("#{namespace_id}:#{handler.redis_name}",
                          redis: Omnic.redis)
+  end
+
+  def search_channels(channel_text)
+    @bot.find_channel(channel_text, @server.name, type: 0)
+  end
+
+  def search_users(user_text)
+    if /<@\d+>/ =~ user_text
+      [@server.member(@bot.parse_mention(user_text).id)]
+    elsif user_text.include?('#')
+      @server.members.find_all { |member| member.distinct == user_text }
+    else
+      @server.members.find_all do |member|
+        member.nick&.casecmp(user_text.downcase)&.zero? ||
+          member.username.casecmp(user_text.downcase).zero?
+      end
+    end
   end
 end
