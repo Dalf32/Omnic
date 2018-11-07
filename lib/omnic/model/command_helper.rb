@@ -31,6 +31,11 @@ module CommandHelper
     !message_event.respond_to?(:server) || message_event.server.nil?
   end
 
+  def owner?(user)
+    return false if user.nil?
+    user.id == Omnic.config.owner_id
+  end
+
   def feature_enabled?(feature, event)
     return true if feature.nil?
 

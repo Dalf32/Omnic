@@ -2,9 +2,11 @@
 
 configure do |config|
   config.bot_token = '<bot_token>>'
-  config.client_id = '<client_id>'
+  config.client_id = 0 #client_id
   config.command_prefix = '!'
   config.advanced_commands = false
+  config.owner_id = 0 #bot_owner_id
+  config.restart_on_error = true
 
   config.logging do |log|
     log.format = "[%d %5l] %m\n"
@@ -26,8 +28,6 @@ configure do |config|
       file.files_to_keep = 7
     end
   end
-
-  config.restart_on_error = true
 
   config.redis do |redis|
     redis.url = 'redis://127.0.0.1:6379/0'

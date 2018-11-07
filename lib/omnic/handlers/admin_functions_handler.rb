@@ -33,11 +33,11 @@ class AdminFunctionsHandler < CommandHandler
     .description('Shows whether the named Feature is enabled or disabled.')
 
   command(:loglevels, :show_log_levels)
-    .permissions(:administrator).max_args(0).usage('loglevels') # TODO: make this command 'owner-only'
+    .owner_only(true).max_args(0).usage('loglevels')
     .description('Lists all log appenders and their logging levels.')
 
   command(:setloglevel, :set_log_level)
-    .args_range(2, 2).permissions(:administrator) # TODO: make this command 'owner-only'
+    .args_range(2, 2).owner_only(true)
     .usage('setloglevel <log_name> <log_level>')
     .description('Sets the logging level for the named appender to the given level.')
 

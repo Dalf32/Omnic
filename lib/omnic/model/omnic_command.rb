@@ -16,6 +16,7 @@ class OmnicCommand
     @pm_enabled = true
     @other_params = {}
     @error = nil
+    @owner_only = false
   end
 
   def id
@@ -68,6 +69,11 @@ class OmnicCommand
     self
   end
 
+  def owner_only(owner_only)
+    @owner_only = owner_only
+    self
+  end
+
   def limit(limit: nil, span: nil, delay: nil, action: nil)
     limit_args = { limit: limit, time_span: span, delay: delay }
                  .reject { |_key, value| value.nil? }
@@ -89,6 +95,11 @@ class OmnicCommand
     Omnic.bot.command @name, **@other_params do |trig_event, *other_args|
       Omnic.logger.info("Command triggered: #{id} #{other_args.join(' ')}")
       Omnic.logger.debug("  Context: Server #{format_obj(trig_event.server)}; Channel #{format_obj(trig_event.channel)}; Author #{format_obj(trig_event.author)}; PM? #{pm?(trig_event)}")
+
+      if @owner_only && !owner?(trig_event.author)
+        Omnic.logger.debug('  Command not run because user is not the Bot Owner')
+        next
+      end
 
       if pm?(trig_event) && !@pm_enabled
         Omnic.logger.debug('  Command not run because it is not allowed in PMs')
