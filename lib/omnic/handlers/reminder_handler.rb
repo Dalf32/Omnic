@@ -55,13 +55,12 @@ class ReminderHandler < CommandHandler
     cutoff_time = Time.now + max_wait_time
 
     event.message.reply('What would you like your reminder to say?')
-    event.message.await(event.message.id, after: cutoff_time) do |await_event|
-      pretty_time = ChronicDuration.output(time_secs)
-      await_event.message.reply("OK, got it! I'll remind you in #{pretty_time}")
+    reminder_text = event.message.await!(after: cutoff_time).text
 
-      create_reminder(event.message.id, time_secs,
-                      event.author, await_event.message.text)
-    end
+    create_reminder(event.message.id, time_secs, event.author, reminder_text)
+
+    pretty_time = ChronicDuration.output(time_secs)
+    "OK, got it! I'll remind you in #{pretty_time}"
   end
 
   def create_reminder(reminder_id, time_secs, user, message)

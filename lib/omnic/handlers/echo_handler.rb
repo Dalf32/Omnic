@@ -82,18 +82,14 @@ class EchoHandler < CommandHandler
   def delete_all(event)
     event.message.reply('This will delete all commands, are you sure? (y/n)')
 
-    event.message.await(event.message.id, start_with: /[yn]/i) do |await_event|
-      unless %w[y yes].include?(await_event.message.text.downcase)
-        await_event.message.reply('Ok, commands will not be cleared.')
-        next
-      end
+    confirmation_text = event.message.await!(start_with: /[yn]/i).text
 
-      command_store.clear_commands
-
-      await_event.message.reply('All commands cleared.')
+    unless %w[y yes].include?(confirmation_text.downcase)
+      return 'Ok, commands will not be cleared.'
     end
 
-    nil
+    command_store.clear_commands
+    'All commands cleared.'
   end
 
   def preview_commands(event)

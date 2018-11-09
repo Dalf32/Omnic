@@ -52,10 +52,7 @@ class LookingForGroupHandler < CommandHandler
 
   def unregister_for_game(user, game_name, role)
     user.remove_role(role)
-    # role.delete if role.members.empty?
-    # TODO: Change to the above when Discordrb next releases
-    members = role_members(@server, role) - [user]
-    role.delete if members.empty?
+    role.delete if role.members.empty?
 
     "You have been unregistered as a player for #{game_name}"
   end
@@ -69,14 +66,8 @@ class LookingForGroupHandler < CommandHandler
   end
 
   def create_role_for_game(server, game_name)
-    # server.create_role(name: "#{game_name}-lfg", mentionable: true,
-    #                    packed_permissions: 0)
-    # TODO: Change to the above when Discordrb next releases
-    server.create_role.tap do |role|
-      role.name = "#{game_name}-lfg"
-      role.mentionable = true
-      role.packed = 0
-    end
+    server.create_role(name: "#{game_name}-lfg", mentionable: true,
+                       permissions: 0)
   end
 
   def role_members(server, role)
