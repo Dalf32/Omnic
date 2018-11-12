@@ -1,6 +1,6 @@
 # admin_functions_handler.rb
 #
-# Author::	Kyle Mullins
+# Author::  Kyle Mullins
 
 class AdminFunctionsHandler < CommandHandler
   command(:limitcmd, :limit_command)
@@ -48,7 +48,7 @@ class AdminFunctionsHandler < CommandHandler
   def limit_command(event, command, allow_deny, *channel_list)
     error_message = nil
     error_message = 'Second parameter must be one of the following: allow, deny, whitelist, blacklist.' unless %w[allow deny whitelist blacklist].include?(allow_deny)
-    error_message = "#{command} is not a recognized command." unless bot.commands.keys.include?(command.to_sym)
+    error_message = "#{command} is not a recognized command." unless bot.commands.key?(command.to_sym)
     error_message = 'You cannot limit that command' if command == 'limitcmd'
 
     all_channels_valid = true
@@ -74,7 +74,7 @@ class AdminFunctionsHandler < CommandHandler
   end
 
   def clear_command_limits(_event, command)
-    return "'#{command}' is not a recognized command." unless bot.commands.keys.include?(command.to_sym)
+    return "'#{command}' is not a recognized command." unless bot.commands.key?(command.to_sym)
 
     clear_lists(command)
     "All limits cleared for command '#{command}'"

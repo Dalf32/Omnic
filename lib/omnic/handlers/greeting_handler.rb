@@ -1,6 +1,6 @@
 # greeting_handler.rb
 #
-# Author::	Kyle Mullins
+# Author::  Kyle Mullins
 
 class GreetingHandler < CommandHandler
   command(:hi, :greet)

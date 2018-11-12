@@ -1,6 +1,6 @@
 # permissions_ext.rb
 #
-# Author::	Kyle Mullins
+# Author::  Kyle Mullins
 
 module PermissionsExt
   def from_symbols(*flag_symbols)

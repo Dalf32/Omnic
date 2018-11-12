@@ -21,6 +21,7 @@ class UserMentionProcessor < SimplePatternProcessor
     mentioned_user = @users.find { |user| mention.include?(user.id.to_s) }
 
     return mention.gsub(/[<>]/, '') if mentioned_user.nil?
+
     "@#{mentioned_user.display_name}"
   end
 end

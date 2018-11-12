@@ -33,6 +33,7 @@ module CommandHelper
 
   def owner?(user)
     return false if user.nil?
+
     user.id == Omnic.config.owner_id
   end
 

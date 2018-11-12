@@ -110,12 +110,12 @@ class DiceRollHandler < CommandHandler
   SAVED_ROLL_KEY = 'saved_roll'.freeze unless defined? SAVED_ROLL_KEY
 
   def build_expression(dice_expr)
-    ExpressionBuilder.build(dice_expr, get_saved_rolls).tap do |expression|
+    ExpressionBuilder.build(dice_expr, saved_rolls).tap do |expression|
       log.debug("Expression: #{expression}")
     end
   end
 
-  def get_saved_rolls
+  def saved_rolls
     roll_names = user_redis.smembers(ROLL_SET_KEY)
     return {} if roll_names.empty?
 

@@ -23,7 +23,7 @@ class ConstantValue
     @value.to_i
   end
 
-  alias :print_eval :print
+  alias print_eval print
 
   def to_s
     "ConstantValue(#{@value})"

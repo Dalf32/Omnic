@@ -1,6 +1,6 @@
 # help_handler.rb
 #
-# Author::	Kyle Mullins
+# Author::  Kyle Mullins
 
 class HelpHandler < CommandHandler
   command(:help, :show_help)

@@ -197,7 +197,7 @@ module Omnic
         syslog.hostname = 'localhost'
         syslog.port = 80
         syslog.local_hostname = nil
-        syslog.tag = File.basename($0)
+        syslog.tag = File.basename($PROGRAM_NAME)
       end
     end
 

@@ -142,8 +142,8 @@ class OmnicCommand
     return true if server.nil?
 
     key_template = "#{get_server_namespace(server)}:admin:%{type}:#{command}"
-    channel_whitelist_key = key_template % { type: 'channel_whitelist' }
-    channel_blacklist_key = key_template % { type: 'channel_blacklist' }
+    channel_whitelist_key = format(key_template, type: 'channel_whitelist')
+    channel_blacklist_key = format(key_template, type: 'channel_blacklist')
     channel = get_channel(triggering_event)
 
     unless channel.nil?

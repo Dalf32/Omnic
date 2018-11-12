@@ -1,6 +1,6 @@
 # bot_ext.rb
 #
-# Author::	Kyle Mullins
+# Author::  Kyle Mullins
 
 module BotExt
   def send_message(channel_id, content, tts = false, embed = nil)

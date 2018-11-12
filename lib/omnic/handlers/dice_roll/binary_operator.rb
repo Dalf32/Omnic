@@ -7,8 +7,7 @@ class BinaryOperator
     @operator = operator
   end
 
-  def validate
-  end
+  def validate; end
 
   def eval(left_val, right_val)
     left_val.send(@operator, right_val)
@@ -18,7 +17,7 @@ class BinaryOperator
     @operator
   end
 
-  alias :print_eval :print
+  alias print_eval print
 
   def to_s
     "BinaryOperator(#{@operator})"

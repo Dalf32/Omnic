@@ -1,6 +1,6 @@
 # command_handler.rb
 #
-# Author::	Kyle Mullins
+# Author::  Kyle Mullins
 
 require_relative '../model/feature'
 require_relative '../model/omnic_command'
@@ -93,11 +93,13 @@ class CommandHandler
 
   def config_section(handler)
     return nil unless handler.respond_to? :config_name
+    
     Omnic.config.handlers[handler.config_name]
   end
 
   def redis_namespace(handler, namespace_id)
     return nil unless handler.respond_to? :redis_name
+    
     Redis::Namespace.new("#{namespace_id}:#{handler.redis_name}",
                          redis: Omnic.redis)
   end
@@ -107,7 +109,7 @@ class CommandHandler
   end
 
   def search_users(user_text)
-    if /<@\d+>/ =~ user_text
+    if /<@\d+>/.match?(user_text)
       [@server.member(@bot.parse_mention(user_text).id)]
     elsif user_text.include?('#')
       @server.members.find_all { |member| member.distinct == user_text }

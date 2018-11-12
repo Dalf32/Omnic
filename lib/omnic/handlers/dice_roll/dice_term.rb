@@ -52,8 +52,8 @@ class DiceTerm
       raise ParserError, "#{@dice_rank} is not a valid Integer"
     end
 
-    raise ParserError, 'Number of Dice cannot be 0' if !@num_dice.empty? && @num_dice.to_i == 0
-    raise ParserError, 'Dice Rank cannot be 0' if @dice_rank.to_i == 0
+    raise ParserError, 'Number of Dice cannot be 0' if !@num_dice.empty? && @num_dice.to_i.zero?
+    raise ParserError, 'Dice Rank cannot be 0' if @dice_rank.to_i.zero?
 
     begin
       Integer(@keep_count)
@@ -61,12 +61,12 @@ class DiceTerm
       raise ParserError, "#{@keep_count} is not a valid Integer"
     end
 
-    raise ParserError, 'Keep Count cannot be 0' if (@keep_high || @keep_low) && @keep_count.to_i == 0
+    raise ParserError, 'Keep Count cannot be 0' if (@keep_high || @keep_low) && @keep_count.to_i.zero?
   end
 
   def eval
     if @all_rolls.empty?
-      @all_rolls = (1..[1, @num_dice.to_i].max).map{ roll_die }
+      @all_rolls = (1..[1, @num_dice.to_i].max).map { roll_die }
       @all_rolls = explode_dice(@all_rolls) if @is_exploding
       @kept_rolls = @all_rolls
       @kept_rolls = keep_high_dice(@all_rolls) if @keep_high
@@ -94,7 +94,7 @@ class DiceTerm
     return [] if dice_rolls.empty?
 
     num_explodes = dice_rolls.count(@dice_rank.to_i)
-    exploded_rolls = (1..num_explodes).map{ roll_die }
+    exploded_rolls = (1..num_explodes).map { roll_die }
     dice_rolls + explode_dice(exploded_rolls)
   end
 
@@ -135,7 +135,7 @@ class DiceTerm
         output = "*#{output}*"
       end
 
-      output = output + '!' if @is_exploding && roll == @dice_rank.to_i
+      output += '!' if @is_exploding && roll == @dice_rank.to_i
 
       output
     end.join(' + ')

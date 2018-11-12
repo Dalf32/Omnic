@@ -1,6 +1,6 @@
 # echo_handler.rb
 #
-# Author::	Kyle Mullins
+# Author::  Kyle Mullins
 
 require_relative 'echo/command_store'
 require_relative 'echo/command_html_renderer'
@@ -93,8 +93,7 @@ class EchoHandler < CommandHandler
   end
 
   def preview_commands(event)
-    template_file = File.expand_path(File.dirname(__FILE__)) +
-                    '/echo/command_list_template.html.erb'
+    template_file = __dir__ + '/echo/command_list_template.html.erb'
 
     renderer = CommandHtmlRenderer.new(template_file)
                                   .command_prefix(config.prefix)

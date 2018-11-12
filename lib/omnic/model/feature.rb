@@ -16,6 +16,7 @@ class Feature
 
   def add_command(command_name)
     return if command?(command_name)
+
     @commands << command_name
   end
 

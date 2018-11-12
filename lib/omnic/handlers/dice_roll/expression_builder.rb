@@ -13,18 +13,16 @@ class ExpressionBuilder
     tokens = tokenize(expression_str, saved_rolls)
     validate(tokens)
 
-    build_expression(to_postfix_form(tokens)).tap do |expression|
-      expression.validate
-    end
+    build_expression(to_postfix_form(tokens)).tap(&:validate)
   end
 
   # Private Class methods
 
-  OPERATOR_REGEX = /[-%+*\/]/
-  SAVED_ROLL_REGEX = /\A[a-z]+\z/i
+  OPERATOR_REGEX = %r{[-%+*\/]}.freeze
+  SAVED_ROLL_REGEX = /\A[a-z]+\z/i.freeze
 
   def self.tokenize(expression_str, saved_rolls)
-    expression_str.split(/([-+*%\/()])/).reject{ |token| token == '' }.map do |token|
+    expression_str.split(%r{([-+*%\/()])}).reject { |token| token == '' }.map do |token|
       if SAVED_ROLL_REGEX === token && saved_rolls.key?(token.downcase)
         tokenize(saved_rolls[token.downcase], saved_rolls)
       else
@@ -47,26 +45,26 @@ class ExpressionBuilder
 
     tokens.each do |token|
       case token
-        when OPERATOR_REGEX
-          if oper_stack.empty? || oper_stack.last == '('
-            oper_stack.push(token)
-          else
-            until oper_stack.empty? || precedence(token) > precedence(oper_stack.last)
-              postfix_form << oper_stack.pop
-            end
-
-            oper_stack.push(token)
-          end
-        when '('
+      when OPERATOR_REGEX
+        if oper_stack.empty? || oper_stack.last == '('
           oper_stack.push(token)
-        when ')'
-          until oper_stack.last == '('
+        else
+          until oper_stack.empty? || precedence(token) > precedence(oper_stack.last)
             postfix_form << oper_stack.pop
           end
 
-          oper_stack.pop
-        else
-          postfix_form << token
+          oper_stack.push(token)
+        end
+      when '('
+        oper_stack.push(token)
+      when ')'
+        until oper_stack.last == '('
+          postfix_form << oper_stack.pop
+        end
+
+        oper_stack.pop
+      else
+        postfix_form << token
       end
     end
 
@@ -75,12 +73,12 @@ class ExpressionBuilder
 
   def self.precedence(operator)
     case operator
-      when /[-+]/
-        1
-      when /[%*\/]/
-        2
-      else
-        0
+    when /[-+]/
+      1
+    when %r{[%*\/]}
+      2
+    else
+      0
     end
   end
 
@@ -89,16 +87,16 @@ class ExpressionBuilder
 
     postfix_tokens.each do |token|
       case token
-        when OPERATOR_REGEX
-          right_expr = expr_stack.pop
-          left_expr = expr_stack.pop
-          operator = BinaryOperator.new(token)
+      when OPERATOR_REGEX
+        right_expr = expr_stack.pop
+        left_expr = expr_stack.pop
+        operator = BinaryOperator.new(token)
 
-          expr_stack.push(SimpleExpression.new(left_expr, operator, right_expr))
-        when /\d*d\d+/i
-          expr_stack.push(DiceTerm.new(token))
-        else
-          expr_stack.push(ConstantValue.new(token))
+        expr_stack.push(SimpleExpression.new(left_expr, operator, right_expr))
+      when /\d*d\d+/i
+        expr_stack.push(DiceTerm.new(token))
+      else
+        expr_stack.push(ConstantValue.new(token))
       end
     end
 

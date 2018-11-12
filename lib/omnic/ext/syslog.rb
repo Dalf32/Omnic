@@ -8,6 +8,7 @@ require 'socket'
 module Logging::Appenders
   def self.syslog(*args)
     return Logging::Appenders::Syslog if args.empty?
+
     Logging::Appenders::Syslog.new(*args)
   end
 

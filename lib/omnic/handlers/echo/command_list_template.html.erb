@@ -52,7 +52,7 @@
         <td>
           <b><i><%=prefix%><%=cmd.name%></i></b>
           <br>
-          <%=render_command(cmd)%>
+          <%=render_command(cmd).encode('utf-8')%>
         </td>
       <%end%>
     </tr>
