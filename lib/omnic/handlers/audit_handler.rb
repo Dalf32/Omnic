@@ -5,10 +5,10 @@
 class AuditHandler < CommandHandler
   feature :audit, default_enabled: false
 
-  command(:auditchannel, :set_audit_channel)
-    .feature(:audit).args_range(1, 1).pm_enabled(false)
-    .permissions(:administrator).usage('auditchannel [channel_name]')
-    .description('Sets or clears the channel for audit messages.')
+  command(:manageaudit, :manage_audit)
+    .feature(:audit).args_range(0, 2).pm_enabled(false)
+    .permissions(:manage_channels).usage('manageaudit [option] [argument]')
+    .description('Used to manage audit options. Try the "help" option for more details.')
 
   event(:member_join, :on_member_join).feature(:audit).pm_enabled(false)
 
@@ -28,20 +28,22 @@ class AuditHandler < CommandHandler
     :audit
   end
 
-  def set_audit_channel(event, *channel)
-    if channel.empty?
+  def manage_audit(_event, *args)
+    return manage_audit_summary if args.empty?
+
+    case args.first
+    when 'help'
+      manage_audit_help
+    when 'channel'
+      return 'Name of Channel is required' if args.size == 1
+
+      update_audit_channel(args[1])
+    when 'disable'
       server_redis.del(:audit_channel)
-      return 'Audit channel has been cleared.'
+      'Audit has been disabled.'
+    else
+      'Invalid option.'
     end
-
-    channels = bot.find_channel(channel.first, event.server.name, type: 0)
-
-    return "#{channel} does not match any channels on this server" if channels.empty?
-    return "#{channel} matches more than one channel on this server" if channels.count > 1
-
-    server_redis.set(:audit_channel, channels.first.id)
-
-    "Audit channel has been set to ##{channels.first.name}"
   end
 
   def on_member_join(event)
@@ -53,22 +55,25 @@ class AuditHandler < CommandHandler
   end
 
   def on_message(event)
-    cache_message(event.message) if cache_enabled?
+    cache_message(event.message) if cache_enabled? && can_encrypt?
   end
 
   def on_message_delete(event)
     message_hash = get_cached_message(event.id)
+    found_user = find_user(message_hash['author'])
+    user_text = found_user&.value&.mention || message_hash['author']
+
     post_audit_message('Message Delete',
-                       channel: "##{event.channel.name}",
-                       author: message_hash['author'],
+                       channel: event.channel.mention,
+                       author: user_text,
                        text: message_hash['text'])
   end
 
   def on_message_edit(event)
     message_hash = get_cached_message(event.message.id)
     post_audit_message('Message Edit',
-                       channel: "##{event.channel.name}",
-                       author: event.author.distinct,
+                       channel: event.channel.mention,
+                       author: event.author.mention,
                        old_text: message_hash['text'],
                        new_text: event.content)
 
@@ -83,8 +88,8 @@ class AuditHandler < CommandHandler
 
   def cache_message(message)
     cache_key = cache_key(message.id)
-    server_redis.hmset(cache_key, :author, message.author.distinct,
-                       :text, message.text)
+    text = Omnic.encryption.encrypt(message.text)
+    server_redis.hmset(cache_key, :author, message.author.distinct, :text, text)
     server_redis.expire(cache_key, config.message_cache_time * 60)
   end
 
@@ -92,7 +97,11 @@ class AuditHandler < CommandHandler
     cache_key = cache_key(message_id)
 
     if server_redis.exists(cache_key)
-      server_redis.hgetall(cache_key).to_h
+      server_redis.hgetall(cache_key).to_h.tap do |result|
+        if can_encrypt?
+          result['text'] = Omnic.encryption.decrypt(result['text'])
+        end
+      end
     else
       default_text = '*[Message Unavailable]*'
       { 'text' => default_text, 'author' => default_text }
@@ -120,5 +129,41 @@ class AuditHandler < CommandHandler
   def audit_channel
     channel_id = server_redis.get(:audit_channel)
     bot.channel(channel_id, @server)
+  end
+
+  def update_audit_channel(channel)
+    found_channel = find_channel(channel)
+
+    return found_channel.error if found_channel.failure?
+
+    server_redis.set(:audit_channel, found_channel.value.id)
+
+    "Audit channel has been set to #{found_channel.value.mention}"
+  end
+
+  def manage_audit_summary
+    return 'Audit is disabled, set an Audit channel to enable' unless audits_enabled?
+
+    response = "Audit channel: #{audit_channel.mention}"
+
+    if !cache_enabled?
+      response += "\nMessage caching is disabled"
+    elsif !can_encrypt?
+      response += "\nEncryption is not available, messages will not be cached."
+    end
+
+    response
+  end
+
+  def manage_audit_help
+    <<~HELP
+      help - Displays this help text
+      channel <channel> - Sets the Channel Audit posts to
+      disable - Disables Auditing
+    HELP
+  end
+
+  def can_encrypt?
+    !Omnic.encryption.nil?
   end
 end
