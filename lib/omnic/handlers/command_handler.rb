@@ -93,13 +93,13 @@ class CommandHandler
 
   def config_section(handler)
     return nil unless handler.respond_to? :config_name
-    
+
     Omnic.config.handlers[handler.config_name]
   end
 
   def redis_namespace(handler, namespace_id)
     return nil unless handler.respond_to? :redis_name
-    
+
     Redis::Namespace.new("#{namespace_id}:#{handler.redis_name}",
                          redis: Omnic.redis)
   end

@@ -28,7 +28,7 @@ module CommandHelper
   end
 
   def pm?(message_event)
-    !message_event.respond_to?(:server) || message_event.server.nil?
+    message_event.respond_to?(:channel) && message_event.channel.private?
   end
 
   def owner?(user)
