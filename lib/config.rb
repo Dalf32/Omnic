@@ -34,6 +34,10 @@ configure do |config|
     redis.timeout = 2
   end
 
+  config.encryption do |encrypt|
+    encrypt.private_key = ''
+  end
+
   config.handlers_list = [
     'omnic/handlers/greeting_handler.rb',
     'omnic/handlers/echo_handler.rb',

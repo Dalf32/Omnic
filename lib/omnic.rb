@@ -105,6 +105,15 @@ module Omnic
     @events ||= []
   end
 
+  def self.encryption
+    key = config.encryption.private_key
+
+    return nil unless defined? RbNaCl::Sodium::Version::STRING
+    return nil if key.nil? || key.empty?
+
+    @encryption ||= RbNaCl::SimpleBox.from_secret_key(key.force_encoding(Encoding::BINARY))
+  end
+
   # Private Class Methods
 
   def self.thread_list
