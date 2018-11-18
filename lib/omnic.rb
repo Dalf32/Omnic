@@ -29,7 +29,7 @@ module Omnic
   def self.bot
     attributes = {
       token: config.bot_token, client_id: config.client_id,
-      prefix: config.command_prefix,
+      prefix: prefix_proc,
       advanced_functionality: config.advanced_commands, help_command: false,
       no_permission_message: "I don't have permission to perform that action on this Server."
     }
@@ -115,6 +115,17 @@ module Omnic
   end
 
   # Private Class Methods
+
+  def self.prefix_proc
+    proc do |message|
+      match = /^#{config.command_prefix}(\w+)(.*)/.match(message.content)
+      if match
+        # Return Command string with prefix stripped and Command word lowercase
+        # to support case insensitivity
+        "#{match[1].downcase}#{match[2]}"
+      end
+    end
+  end
 
   def self.thread_list
     @thread_list ||= {}
@@ -244,7 +255,7 @@ module Omnic
     end
   end
 
-  private_class_method :thread_list, :setup_redis, :init_logger,
+  private_class_method :prefix_proc, :thread_list, :setup_redis, :init_logger,
                        :default_config, :load_handlers, :kill_worker_threads
 end
 
