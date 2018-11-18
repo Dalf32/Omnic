@@ -73,11 +73,18 @@ class AuditHandler < CommandHandler
 
   def on_message_edit(event)
     message_hash = audit_store.cached_message(event.message.id)
+
+    data_hash = if event.message.pinned?.to_s != message_hash['pinned']
+      { text: message_hash['text'],
+        status: event.message.pinned? ? 'Pinned' : 'Unpinned' }
+    else
+      { old_text: message_hash['text'], new_text: event.content }
+    end
+
     post_audit_message('Message Edit',
                        channel: event.channel.mention,
                        author: event.author.mention,
-                       old_text: message_hash['text'],
-                       new_text: event.content)
+                       **data_hash)
 
     on_message(event) # Update the cache
   end

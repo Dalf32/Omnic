@@ -39,7 +39,8 @@ class AuditStore
   def cache_message(message)
     cache_key = cache_key(message.id)
     text = can_encrypt? ? Omnic.encryption.encrypt(message.text) : message.text
-    @redis.hmset(cache_key, :author, message.author.distinct, :text, text)
+    @redis.hmset(cache_key, :author, message.author.distinct, :text, text,
+                 :pinned, message.pinned?)
     @redis.expire(cache_key, @message_cache_time * 60)
   end
 
