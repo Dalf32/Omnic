@@ -2,6 +2,8 @@
 #
 # AUTHOR::  Kyle Mullins
 
+require_relative 'audit/audit_store'
+
 class AuditHandler < CommandHandler
   feature :audit, default_enabled: false
 
@@ -39,7 +41,7 @@ class AuditHandler < CommandHandler
 
       update_audit_channel(args[1])
     when 'disable'
-      server_redis.del(:audit_channel)
+      audit_store.clear_channel
       'Audit has been disabled.'
     else
       'Invalid option.'
@@ -55,11 +57,11 @@ class AuditHandler < CommandHandler
   end
 
   def on_message(event)
-    cache_message(event.message) if cache_enabled? && can_encrypt?
+    audit_store.cache_message(event.message) if audit_store.should_cache?
   end
 
   def on_message_delete(event)
-    message_hash = get_cached_message(event.id)
+    message_hash = audit_store.cached_message(event.id)
     found_user = find_user(message_hash['author'])
     user_text = found_user&.value&.mention || message_hash['author']
 
@@ -70,7 +72,7 @@ class AuditHandler < CommandHandler
   end
 
   def on_message_edit(event)
-    message_hash = get_cached_message(event.message.id)
+    message_hash = audit_store.cached_message(event.message.id)
     post_audit_message('Message Edit',
                        channel: event.channel.mention,
                        author: event.author.mention,
@@ -82,42 +84,12 @@ class AuditHandler < CommandHandler
 
   private
 
-  def cache_enabled?
-    config.message_cache_time.positive?
-  end
-
-  def cache_message(message)
-    cache_key = cache_key(message.id)
-    text = Omnic.encryption.encrypt(message.text)
-    server_redis.hmset(cache_key, :author, message.author.distinct, :text, text)
-    server_redis.expire(cache_key, config.message_cache_time * 60)
-  end
-
-  def get_cached_message(message_id)
-    cache_key = cache_key(message_id)
-
-    if server_redis.exists(cache_key)
-      server_redis.hgetall(cache_key).to_h.tap do |result|
-        if can_encrypt?
-          result['text'] = Omnic.encryption.decrypt(result['text'])
-        end
-      end
-    else
-      default_text = '*[Message Unavailable]*'
-      { 'text' => default_text, 'author' => default_text }
-    end
-  end
-
-  def cache_key(message_id)
-    "message_cache:#{message_id}"
-  end
-
-  def audits_enabled?
-    server_redis.exists(:audit_channel)
+  def audit_store
+    @audit_store ||= AuditStore.new(server_redis, config.message_cache_time)
   end
 
   def post_audit_message(event_type, **data)
-    return unless audits_enabled?
+    return unless audit_store.channel_set?
 
     message = "***#{event_type}***\n#{'-' * event_type.length}"
 
@@ -127,8 +99,7 @@ class AuditHandler < CommandHandler
   end
 
   def audit_channel
-    channel_id = server_redis.get(:audit_channel)
-    bot.channel(channel_id, @server)
+    bot.channel(audit_store.channel, @server)
   end
 
   def update_audit_channel(channel)
@@ -136,19 +107,19 @@ class AuditHandler < CommandHandler
 
     return found_channel.error if found_channel.failure?
 
-    server_redis.set(:audit_channel, found_channel.value.id)
+    audit_store.channel = found_channel.value.id
 
     "Audit channel has been set to #{found_channel.value.mention}"
   end
 
   def manage_audit_summary
-    return 'Audit is disabled, set an Audit channel to enable' unless audits_enabled?
+    return 'Audit is disabled, set an Audit channel to enable' unless audit_store.channel_set?
 
     response = "Audit channel: #{audit_channel.mention}"
 
-    if !cache_enabled?
+    if !audit_store.enabled?
       response += "\nMessage caching is disabled"
-    elsif !can_encrypt?
+    elsif !audit_store.can_encrypt?
       response += "\nEncryption is not available, messages will not be cached."
     end
 
@@ -161,9 +132,5 @@ class AuditHandler < CommandHandler
       channel <channel> - Sets the Channel Audit posts to
       disable - Disables Auditing
     HELP
-  end
-
-  def can_encrypt?
-    !Omnic.encryption.nil?
   end
 end
