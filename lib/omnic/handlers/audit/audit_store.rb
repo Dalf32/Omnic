@@ -50,11 +50,13 @@ class AuditStore
     if @redis.exists(cache_key)
       return @redis.hgetall(cache_key).to_h.tap do |result|
         result['text'] = Omnic.encryption.decrypt(result['text']) if can_encrypt?
+        result['message_available'] = true
       end
     end
 
     default_text = '*[Message Unavailable]*'
-    { 'text' => default_text, 'author' => default_text }
+    { 'text' => default_text, 'author' => default_text,
+      'message_available' => false }
   end
 
   private

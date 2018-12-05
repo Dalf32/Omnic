@@ -74,7 +74,8 @@ class AuditHandler < CommandHandler
   def on_message_edit(event)
     message_hash = audit_store.cached_message(event.message.id)
 
-    data_hash = if event.message.pinned?.to_s != message_hash['pinned']
+    data_hash = if message_hash['message_available'] &&
+                   event.message.pinned?.to_s != message_hash['pinned']
       { text: message_hash['text'],
         status: event.message.pinned? ? 'Pinned' : 'Unpinned' }
     else
