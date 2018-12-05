@@ -39,6 +39,7 @@ class AuditStore
   def cache_message(message)
     cache_key = cache_key(message.id)
     text = can_encrypt? ? Omnic.encryption.encrypt(message.text) : message.text
+    text = text.force_encoding('UTF-8')
     @redis.hmset(cache_key, :author, message.author.distinct, :text, text,
                  :pinned, message.pinned?)
     @redis.expire(cache_key, @message_cache_time * 60)
@@ -49,9 +50,11 @@ class AuditStore
 
     if @redis.exists(cache_key)
       return @redis.hgetall(cache_key).to_h.tap do |result|
-        encrypted = result['text'].force_encoding('ASCII-8BIT')
-        result['text'] = Omnic.encryption.decrypt(encrypted) if can_encrypt?
-        result['message_available'] = true
+        if can_encrypt?
+          encrypted = result['text'].force_encoding('ASCII-8BIT')
+          result['text'] = Omnic.encryption.decrypt(encrypted).force_encoding('UTF-8')
+          result['message_available'] = true
+        end
       end
     end
 
