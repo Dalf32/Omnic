@@ -109,7 +109,7 @@ class CommandHandler
   end
 
   def search_users(user_text)
-    if /<@\d+>/.match?(user_text)
+    if /<@\d+>/ =~ (user_text)
       [@server.member(@bot.parse_mention(user_text).id)]
     elsif user_text.include?('#')
       @server.members.find_all { |member| member.distinct == user_text }
