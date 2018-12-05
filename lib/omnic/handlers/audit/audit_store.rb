@@ -49,7 +49,8 @@ class AuditStore
 
     if @redis.exists(cache_key)
       return @redis.hgetall(cache_key).to_h.tap do |result|
-        result['text'] = Omnic.encryption.decrypt(result['text']) if can_encrypt?
+        encrypted = result['text'].force_encoding('ASCII-8BIT')
+        result['text'] = Omnic.encryption.decrypt(encrypted) if can_encrypt?
         result['message_available'] = true
       end
     end
