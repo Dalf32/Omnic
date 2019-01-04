@@ -51,12 +51,12 @@ class CommandHandler
     redis_namespace(self, 'GLOBAL')
   end
 
-  def server_redis
-    redis_namespace(self, get_server_namespace(@server)) unless @server.nil?
+  def server_redis(server = @server)
+    redis_namespace(self, get_server_namespace(server)) unless server.nil?
   end
 
-  def user_redis
-    redis_namespace(self, get_user_namespace(@user)) unless @user.nil?
+  def user_redis(user = @user)
+    redis_namespace(self, get_user_namespace(user)) unless user.nil?
   end
 
   def config
