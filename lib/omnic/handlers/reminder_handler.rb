@@ -30,8 +30,6 @@ class ReminderHandler < CommandHandler
     return "Time too large: #{time_str}" if time_secs >= 2_147_483_647
 
     prompt_for_message(event, time_secs)
-
-    nil
   end
 
   def start_reminder_thread(_event)
@@ -52,10 +50,10 @@ class ReminderHandler < CommandHandler
 
   def prompt_for_message(event, time_secs)
     max_wait_time = config.key?(:max_response_time) ? config.max_response_time : 300
-    cutoff_time = Time.now + max_wait_time
 
     event.message.reply('What would you like your reminder to say?')
-    reminder_text = event.message.await!(after: cutoff_time).text
+    reminder_text = event.message.await!(timeout: max_wait_time)&.text
+    return nil if reminder_text.nil?
 
     create_reminder(event.message.id, time_secs, event.author, reminder_text)
 
@@ -67,8 +65,7 @@ class ReminderHandler < CommandHandler
     log.info("Creating reminder for User [#{user.name}:#{user.id}]")
 
     global_redis.setex("timers:#{reminder_id}", time_secs, 'timer')
-    global_redis.hmset("details:#{reminder_id}",
-                       'user_id', user.id,
+    global_redis.hmset("details:#{reminder_id}", 'user_id', user.id,
                        'message', message)
     global_redis.sadd('ids', reminder_id)
   end
