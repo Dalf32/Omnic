@@ -57,6 +57,8 @@ class AuditHandler < CommandHandler
   end
 
   def on_message(event)
+    return if event.from_bot?
+
     audit_store.cache_message(event.message) if audit_store.should_cache?
   end
 
@@ -72,6 +74,8 @@ class AuditHandler < CommandHandler
   end
 
   def on_message_edit(event)
+    return if event.from_bot?
+
     message_hash = audit_store.cached_message(event.message.id)
 
     data_hash = if message_hash['message_available'] &&
@@ -100,7 +104,6 @@ class AuditHandler < CommandHandler
     return unless audit_store.channel_set?
 
     message = "***#{event_type}***\n#{'-' * event_type.length}"
-
     message += data.map { |key, value| "\n**#{key.capitalize}**: #{value}" }.join
 
     audit_channel.send_message(message)
@@ -112,7 +115,6 @@ class AuditHandler < CommandHandler
 
   def update_audit_channel(channel)
     found_channel = find_channel(channel)
-
     return found_channel.error if found_channel.failure?
 
     audit_store.channel = found_channel.value.id
