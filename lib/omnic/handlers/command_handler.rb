@@ -25,8 +25,8 @@ class CommandHandler
     end
   end
 
-  def self.feature(name, default_enabled: true)
-    Omnic.features[name] = Feature.new(name, default_enabled)
+  def self.feature(name, default_enabled: true, description: '')
+    Omnic.features[name] = Feature.new(name, default_enabled, description)
   end
 
   def initialize(bot, server, user)

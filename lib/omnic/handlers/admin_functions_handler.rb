@@ -27,11 +27,6 @@ class AdminFunctionsHandler < CommandHandler
     .usage('feature <feature> <on/off/enable/disable>')
     .description('Enables (on) or Disables (off) the named Feature.')
 
-  command(:featurestatus, :show_feature_status)
-    .args_range(1, 1).permissions(:manage_server).pm_enabled(false)
-    .usage('featurestatus <feature>')
-    .description('Shows whether the named Feature is enabled or disabled.')
-
   command(:loglevels, :show_log_levels)
     .owner_only(true).max_args(0).usage('loglevels')
     .description('Lists all log appenders and their logging levels.')
@@ -85,7 +80,7 @@ class AdminFunctionsHandler < CommandHandler
   end
 
   def list_features(_event)
-    Omnic.features.values.map(&:to_s).join("\n")
+    Omnic.features.values.map { |f| f.to_s(feature_redis) }.join("\n")
   end
 
   def set_feature_on_off(_event, feature, on_off)
@@ -96,14 +91,6 @@ class AdminFunctionsHandler < CommandHandler
     Omnic.features[feature.to_sym].set_enabled(feature_redis, is_enabled)
 
     "Feature '#{feature}' has been #{is_enabled ? 'enabled' : 'disabled'} for this server."
-  end
-
-  def show_feature_status(_event, feature)
-    return "'#{feature}' is not a recognized feature." unless Omnic.features.key?(feature.to_sym)
-
-    is_enabled = Omnic.features[feature.to_sym].enabled?(feature_redis)
-
-    "Feature '#{feature}' is #{is_enabled ? 'enabled' : 'disabled'} on this Server."
   end
 
   def show_log_levels(_event)

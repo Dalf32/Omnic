@@ -6,11 +6,12 @@ class Feature
   FEATURE_ON = 'on'.freeze
   FEATURE_OFF = 'off'.freeze
 
-  attr_reader :name, :default_enabled
+  attr_reader :name, :default_enabled, :description
 
-  def initialize(name, default_enabled)
+  def initialize(name, default_enabled, description)
     @name = name
     @default_enabled = default_enabled
+    @description = description
     @commands = []
   end
 
@@ -36,8 +37,12 @@ class Feature
     server_redis.set(feature_key, is_enabled ? FEATURE_ON : FEATURE_OFF)
   end
 
-  def to_s
-  "`#{@name}`: #{@commands.join(', ')}"
+  def to_s(redis = nil)
+    str = "**#{@name}**"
+    str += " (#{enabled?(redis) ? 'On' : 'Off'})" unless redis.nil?
+    str += @description.empty? ? "\n" : ": #{@description}\n"
+    str += "    #{@commands.join(', ')}"
+    str
   end
 
   private
