@@ -5,7 +5,8 @@
 require_relative 'dice_roll/expression_builder'
 
 class DiceRollHandler < CommandHandler
-  feature :dice, default_enabled: true
+  feature :dice, default_enabled: true,
+                 description: 'Provides a robust dice roller with the ability to save/recall rolls.'
 
   command(:roll, :roll_dice)
     .feature(:dice).min_args(1).usage('roll <dice_expr>')

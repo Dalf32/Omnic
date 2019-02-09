@@ -5,7 +5,8 @@
 require_relative 'audit/audit_store'
 
 class AuditHandler < CommandHandler
-  feature :audit, default_enabled: false
+  feature :audit, default_enabled: false,
+                  description: 'Logs notable events to a configured channel.'
 
   command(:manageaudit, :manage_audit)
     .feature(:audit).args_range(0, 2).pm_enabled(false)

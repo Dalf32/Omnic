@@ -6,7 +6,8 @@ require_relative 'echo/command_store'
 require_relative 'echo/command_html_renderer'
 
 class EchoHandler < CommandHandler
-  feature :echo, default_enabled: true
+  feature :echo, default_enabled: true,
+                 description: 'Allows for storage and recall of arbitrary text.'
 
   event(:message, :on_message)
     .feature(:echo).pm_enabled(false)
@@ -28,9 +29,9 @@ class EchoHandler < CommandHandler
     .permissions(:administrator).pm_enabled(false).feature(:echo)
     .usage('delall').description('Deletes all of the registered echo commands.')
 
-  command(:previewcmds, :preview_commands)
-    .pm_enabled(false).feature(:echo).max_args(0).usage('previewcmds')
-    .limit(delay: 60, action: :on_limit).description('')
+  # command(:previewcmds, :preview_commands)
+  #   .pm_enabled(false).feature(:echo).max_args(0).usage('previewcmds')
+  #   .limit(delay: 60, action: :on_limit).description('')
 
   def config_name
     :echo

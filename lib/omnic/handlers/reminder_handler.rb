@@ -5,7 +5,8 @@
 require 'chronic_duration'
 
 class ReminderHandler < CommandHandler
-  feature :reminders, default_enabled: true
+  feature :reminders, default_enabled: true,
+                      description: 'Lets Users set up personal reminders.'
 
   command(:remindmein, :remind_me_in)
     .feature(:reminders).min_args(1).usage('remindmein <time_expr>')
