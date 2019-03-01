@@ -89,6 +89,15 @@ class CommandHandler
     result
   end
 
+  def handle_errors(event)
+    begin
+      yield
+    rescue StandardError => err
+      log.error(err.full_message)
+      event.respond('An unexpected error occurred.')
+    end
+  end
+
   private
 
   def config_section(handler)
