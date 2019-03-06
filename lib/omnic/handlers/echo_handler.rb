@@ -15,7 +15,7 @@ class EchoHandler < CommandHandler
   command(:addcmd, :add_command)
     .min_args(2).pm_enabled(false).feature(:echo)
     .usage('addcmd <command> <output>')
-    .description('Adds an echo command such that the bot will reply with the provided output when it receives the command trigger.')
+    .description('Adds an echo that the bot will reply with when it receives the command trigger. "$#" can be used to add a placeholder in the output.')
 
   command(:delcmd, :delete_command)
     .args_range(1, 1).pm_enabled(false).feature(:echo).usage('delcmd <command>')
@@ -111,18 +111,21 @@ class EchoHandler < CommandHandler
   end
 
   def on_message(event)
-    return if pm?(event)
-
     text = event.message.text
-    full_command = text.scan(/[^#{config.prefix}]*(#{config.prefix}+\w*).*/).flatten.first
+    match = text.match(/[^#{config.prefix}]*(#{config.prefix}+\w*)(.*)/)
+    return if match.nil?
 
-    return nil if full_command.nil?
-
+    full_command = match[1]
     command_name = full_command.delete(config.prefix)
 
-    return nil unless command_store.has_command?(command_name)
+    return unless command_store.has_command?(command_name)
 
-    event.message.reply(command_store.get_reply(command_name))
+    message = command_store.get_reply(command_name).gsub('$#', '%s')
+    placeholder_count = message.scan(/%s/).count
+    args = match[2].split(' ')
+    args += [''] * [(placeholder_count - args.count), 0].max
+
+    event.message.reply(format(message, *args))
     event.message.delete if full_command.start_with?(config.prefix * 2)
   end
 
