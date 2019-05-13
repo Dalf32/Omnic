@@ -93,7 +93,7 @@ class CommandHandler
     begin
       yield
     rescue StandardError => err
-      log.error(err.full_message)
+      log.error(err)
       event.respond('An unexpected error occurred.')
     end
   end
