@@ -93,6 +93,10 @@ module Omnic
     thread_list.count - alive_workers
   end
 
+  def self.mutex(key)
+    mutexes[key] ||= Concurrent::Semaphore.new(1)
+  end
+
   def self.clear_features
     features.clear
   end
@@ -138,6 +142,10 @@ module Omnic
     end
 
     thread_list.clear
+  end
+
+  def self.mutexes
+    @mutexes ||= {}
   end
 
   def self.setup_redis
@@ -256,7 +264,8 @@ module Omnic
   end
 
   private_class_method :prefix_proc, :thread_list, :setup_redis, :init_logger,
-                       :default_config, :load_handlers, :kill_worker_threads
+                       :default_config, :load_handlers, :kill_worker_threads,
+                       :load_commands, :load_events, :mutexes
 end
 
 def configure
