@@ -13,6 +13,7 @@ require 'configatron/core'
 require 'redis'
 require 'redis/namespace'
 require 'logging'
+require 'concurrent'
 
 require_relative 'omnic/handlers/command_handler'
 require_relative 'omnic/ext/bot_ext'
