@@ -21,6 +21,7 @@ require_relative 'omnic/ext/role_ext'
 require_relative 'omnic/ext/permissions_ext'
 require_relative 'omnic/ext/logger_hook'
 require_relative 'omnic/ext/syslog'
+require_relative 'omnic/ext/integer_ext'
 
 module Omnic
   def self.config
@@ -280,6 +281,8 @@ Discordrb::Bot.prepend(BotExt)
 Discordrb::Permissions.extend(PermissionsExt)
 Discordrb::Logger.prepend(LoggerHook)
 Discordrb::Role.prepend(RoleExt)
+
+Integer.include(IntegerExt)
 
 config_file = ARGV.empty? ? 'config.rb' : ARGV[0]
 
