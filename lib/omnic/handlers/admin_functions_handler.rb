@@ -15,11 +15,11 @@ class AdminFunctionsHandler < CommandHandler
     .description('Removes all channel limits for the given Command name on this Server.')
 
   command(:inviteurl, :invite_url)
-    .permissions(:manage_server).max_args(0).usage('inviteurl')
+    .permissions(:manage_server).no_args.usage('inviteurl')
     .description('Generates a URL which can be used to invite this bot to a server.')
 
   command(:features, :list_features)
-    .permissions(:manage_server).max_args(0).usage('features')
+    .permissions(:manage_server).no_args.usage('features')
     .description('Lists all the loaded Features and the Commands controlled by them.')
 
   command(:feature, :set_feature_on_off)
@@ -28,7 +28,7 @@ class AdminFunctionsHandler < CommandHandler
     .description('Enables (on) or Disables (off) the named Feature.')
 
   command(:loglevels, :show_log_levels)
-    .owner_only(true).max_args(0).usage('loglevels')
+    .owner_only(true).no_args.usage('loglevels')
     .description('Lists all log appenders and their logging levels.')
 
   command(:setloglevel, :set_log_level)

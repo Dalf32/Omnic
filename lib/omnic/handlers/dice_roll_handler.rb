@@ -21,11 +21,11 @@ class DiceRollHandler < CommandHandler
     .description('Deletes the saved roll with the given name.')
 
   command(:listrolls, :list_saved_rolls)
-    .feature(:dice).max_args(0).usage('listrolls')
+    .feature(:dice).no_args.usage('listrolls')
     .description('Lists all of the rolls you have saved.')
 
   command(:rollhelp, :show_roll_help)
-    .feature(:dice).max_args(0).usage('rollhelp')
+    .feature(:dice).no_args.usage('rollhelp')
     .description('Shows an explanation of some of the dice expression syntax.')
 
   def redis_name

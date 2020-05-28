@@ -54,6 +54,10 @@ class OmnicCommand
     min_args(min).max_args(max)
   end
 
+  def no_args
+    max_args(0)
+  end
+
   def usage(usage)
     @other_params[:usage] = usage
     self

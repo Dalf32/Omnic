@@ -15,7 +15,7 @@ class LookingForGroupHandler < CommandHandler
     .description('Registers you to be notified when people want to play the given game. If you are already registered, unregisters instead.')
 
   command(:lfggames, :list_lfg_games)
-    .feature(:lfg).usage('lfggames').max_args(0).pm_enabled(false)
+    .feature(:lfg).usage('lfggames').no_args.pm_enabled(false)
     .description('Lists all the games people have registered for.')
 
   def looking_for_group(event, *game_name)

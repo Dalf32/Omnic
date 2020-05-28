@@ -30,7 +30,7 @@ class EchoHandler < CommandHandler
     .usage('delall').description('Deletes all of the registered echo commands.')
 
   # command(:previewcmds, :preview_commands)
-  #   .pm_enabled(false).feature(:echo).max_args(0).usage('previewcmds')
+  #   .pm_enabled(false).feature(:echo).no_args.usage('previewcmds')
   #   .limit(delay: 60, action: :on_limit).description('')
 
   def config_name
