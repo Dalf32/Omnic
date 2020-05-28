@@ -21,6 +21,7 @@ require_relative 'omnic/ext/role_ext'
 require_relative 'omnic/ext/logger_hook'
 require_relative 'omnic/ext/syslog'
 require_relative 'omnic/ext/integer_ext'
+require_relative 'omnic/ext/warning'
 
 module Omnic
   def self.config
