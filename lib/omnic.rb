@@ -18,7 +18,6 @@ require 'concurrent'
 require_relative 'omnic/handlers/command_handler'
 require_relative 'omnic/ext/bot_ext'
 require_relative 'omnic/ext/role_ext'
-require_relative 'omnic/ext/permissions_ext'
 require_relative 'omnic/ext/logger_hook'
 require_relative 'omnic/ext/syslog'
 require_relative 'omnic/ext/integer_ext'
@@ -278,7 +277,6 @@ end
 should_restart = false
 
 Discordrb::Bot.prepend(BotExt)
-Discordrb::Permissions.extend(PermissionsExt)
 Discordrb::Logger.prepend(LoggerHook)
 Discordrb::Role.prepend(RoleExt)
 
