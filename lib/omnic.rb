@@ -16,6 +16,7 @@ require 'logging'
 require 'concurrent'
 
 require_relative 'omnic/handlers/command_handler'
+require_relative 'omnic/handlers/handler_plugin'
 require_relative 'omnic/ext/bot_ext'
 require_relative 'omnic/ext/role_ext'
 require_relative 'omnic/ext/logger_hook'
@@ -64,6 +65,7 @@ module Omnic
     end
 
     load_handlers
+    load_plugins
     load_commands
     load_events
 
@@ -238,9 +240,20 @@ module Omnic
     config.handlers_list.each do |handler_file|
       begin
         load handler_file
-        logger.debug("Successfully loaded #{handler_file}")
+        logger.debug("Successfully loaded Handler #{handler_file}")
       rescue LoadError, StandardError => e
         logger.warn("Failed to load handler file #{handler_file}: #{e}\n\t#{e.backtrace.join("\n\t")}")
+      end
+    end
+  end
+
+  def self.load_plugins
+    config.plugins_list.each do |plugin_file|
+      begin
+        load plugin_file
+        logger.debug("Successfully loaded Plugin #{plugin_file}")
+      rescue LoadError, StandardError => e
+        logger.warn("Failed to load plugin file #{plugin_file}: #{e}\n\t#{e.backtrace.join("\n\t")}")
       end
     end
   end

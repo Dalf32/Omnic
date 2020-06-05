@@ -37,7 +37,7 @@ class CommandHandler
 
   protected
 
-  attr_accessor :bot
+  attr_accessor :bot, :server, :user
 
   def thread(thread_name, &block)
     existing_thread = Omnic.get_worker_thread(thread_name)
@@ -101,13 +101,13 @@ class CommandHandler
   private
 
   def config_section(handler)
-    return nil unless handler.respond_to? :config_name
+    return nil unless handler.respond_to?(:config_name)
 
     Omnic.config.handlers[handler.config_name]
   end
 
   def redis_namespace(handler, namespace_id)
-    return nil unless handler.respond_to? :redis_name
+    return nil unless handler.respond_to?(:redis_name)
 
     Redis::Namespace.new("#{namespace_id}:#{handler.redis_name}",
                          redis: Omnic.redis)
