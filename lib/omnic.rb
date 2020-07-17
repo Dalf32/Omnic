@@ -158,7 +158,7 @@ module Omnic
     params = { url: config.redis.url }
     params[:timeout] = config.redis.timeout if config.redis.key?(:timeout)
 
-    Redis.new(**params)
+    Redis.current = Redis.new(**params)
   end
 
   def self.init_logger
