@@ -236,10 +236,18 @@ module Omnic
     config
   end
 
+  def self.load_file(file)
+    if file.end_with?('.rb')
+      load file
+    else
+      require file
+    end
+  end
+
   def self.load_handlers
     config.handlers_list.each do |handler_file|
       begin
-        load handler_file
+        load_file(handler_file)
         logger.debug("Successfully loaded Handler #{handler_file}")
       rescue LoadError, StandardError => e
         logger.warn("Failed to load handler file #{handler_file}: #{e}\n\t#{e.backtrace.join("\n\t")}")
@@ -250,7 +258,7 @@ module Omnic
   def self.load_plugins
     config.plugins_list.each do |plugin_file|
       begin
-        load plugin_file
+        load_file(plugin_file)
         logger.debug("Successfully loaded Plugin #{plugin_file}")
       rescue LoadError, StandardError => e
         logger.warn("Failed to load plugin file #{plugin_file}: #{e}\n\t#{e.backtrace.join("\n\t")}")
