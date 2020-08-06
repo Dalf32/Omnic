@@ -98,7 +98,37 @@ class CommandHandler
     end
   end
 
+  def update_bot_status(status, activity, url, *args)
+    priority = determine_status_priority
+    cur_prio = current_status_priority
+
+    if cur_prio > priority
+      log.debug("Bot status was not set by #{self.class} (priority #{priority}) because it has already been set with a higher priority (#{cur_prio})")
+      return
+    end
+
+    log.debug("Bot status set by #{self.class} (priority #{priority})")
+    Omnic.redis.set(PRIO_KEY, priority)
+    Omnic.bot.update_status(status, activity, url, *args)
+  end
+
+  def clear_bot_status
+    priority = determine_status_priority
+    cur_prio = current_status_priority
+
+    if cur_prio > priority
+      log.debug("Bot status was not cleared by #{self.class} (priority #{priority}) because it was set with a higher priority (#{cur_prio})")
+      return
+    end
+
+    log.debug("Bot status cleared by #{self.class} (priority #{priority})")
+    Omnic.redis.del(PRIO_KEY)
+    Omnic.bot.update_status('online', nil, nil, 0, false, 0)
+  end
+
   private
+
+  PRIO_KEY = "GLOBAL:bot_status_prio" unless defined? PRIO_KEY
 
   def config_section(handler)
     return nil unless handler.respond_to?(:config_name)
@@ -130,5 +160,14 @@ class CommandHandler
           member.username.casecmp(user_text).zero?
       end
     end
+  end
+
+  def determine_status_priority
+    priorities = Omnic.config.status_priority
+    respond_to?(:config_name) ? priorities.fetch(config_name, 0) : 0
+  end
+
+  def current_status_priority
+    Omnic.redis.exists?(PRIO_KEY) ? Omnic.redis.get(PRIO_KEY).to_i : 0
   end
 end
