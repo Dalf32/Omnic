@@ -42,7 +42,7 @@ class ReminderHandler < CommandHandler
   def check_reminders
     loop do
       global_redis.smembers('ids').each do |reminder_id|
-        send_reminder(reminder_id) unless global_redis.exists("timers:#{reminder_id}")
+        send_reminder(reminder_id) unless global_redis.exists?("timers:#{reminder_id}")
       end
 
       sleep_reminder_thread
