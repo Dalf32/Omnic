@@ -151,10 +151,10 @@ class OmnicCommand
     channel = get_channel(triggering_event)
 
     unless channel.nil?
-      if Omnic.redis.exists?(channel_whitelist_key) &&
+      if Omnic.redis.exists(channel_whitelist_key) &&
          !Omnic.redis.sismember(channel_whitelist_key, channel.id.to_s)
         return false
-      elsif Omnic.redis.exists?(channel_blacklist_key) &&
+      elsif Omnic.redis.exists(channel_blacklist_key) &&
             Omnic.redis.sismember(channel_blacklist_key, channel.id.to_s)
         return false
       end

@@ -28,7 +28,7 @@ class Feature
   alias command? has_command?
 
   def enabled?(server_redis)
-    return true if @default_enabled && !server_redis.exists?(feature_key)
+    return true if @default_enabled && !server_redis.exists(feature_key)
 
     server_redis.get(feature_key) == FEATURE_ON
   end
