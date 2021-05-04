@@ -35,6 +35,7 @@ class DiceTerm
     end
 
     @num_dice, @dice_rank = *expression.split('d')
+    @num_dice = '1' if @num_dice.empty?
     @kept_rolls = []
     @all_rolls = []
   end
@@ -52,7 +53,7 @@ class DiceTerm
       raise ParserError, "#{@dice_rank} is not a valid Integer"
     end
 
-    raise ParserError, 'Number of Dice cannot be 0' if !@num_dice.empty? && @num_dice.to_i.zero?
+    raise ParserError, 'Number of Dice cannot be 0' if @num_dice.to_i.zero?
     raise ParserError, 'Dice Rank cannot be 0' if @dice_rank.to_i.zero?
 
     begin
