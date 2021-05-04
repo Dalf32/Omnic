@@ -101,6 +101,9 @@ class DiceRollHandler < CommandHandler
 
       Saved rolls can be used simply by including the name the roll was saved under within the expression.
         *ex: If we have the roll* `2d20k1` *saved with the name 'adv', then rolling* `(adv + 14) * 2` *would expand the 'adv' roll and we would roll* `(2d20k1 + 14) * 2`
+
+      An expression can be repeated a number of times by appending the keyword `Repeat` followed by a basic expression or number.
+        *ex:* `1d20 + 2 Repeat 3` *would roll* `1d20 + 2` *3 times.*
     HELP
   end
 
