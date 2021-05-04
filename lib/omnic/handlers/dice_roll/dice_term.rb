@@ -77,6 +77,11 @@ class DiceTerm
     @kept_rolls.reduce(:+)
   end
 
+  def eval_and_print
+    rolled_value = eval
+    "#{print_eval} = #{rolled_value}"
+  end
+
   def print
     "#{@num_dice.to_i}d#{@dice_rank.to_i}#{keep_str(@keep_count.to_i)}#{explode_str}"
   end

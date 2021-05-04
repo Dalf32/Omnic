@@ -21,6 +21,11 @@ class SimpleExpression
     @operator.eval(@left_expr.eval, @right_expr.eval)
   end
 
+  def eval_and_print
+    rolled_value = eval
+    "#{print_eval} = #{rolled_value}"
+  end
+
   def print
     "(#{@left_expr.print} #{@operator.print} #{@right_expr.print})"
   end
@@ -31,5 +36,9 @@ class SimpleExpression
 
   def to_s
     "SimpleExpression(#{@left_expr} #{@operator} #{@right_expr})"
+  end
+
+  def clone
+    SimpleExpression.new(@left_expr.clone, @operator.clone, @right_expr.clone)
   end
 end

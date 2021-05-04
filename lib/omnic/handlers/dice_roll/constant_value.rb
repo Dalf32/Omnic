@@ -24,6 +24,7 @@ class ConstantValue
   end
 
   alias print_eval print
+  alias eval_and_print print
 
   def to_s
     "ConstantValue(#{@value})"
