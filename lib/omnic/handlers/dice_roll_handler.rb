@@ -36,7 +36,7 @@ class DiceRollHandler < CommandHandler
     expression = build_expression(dice_expr.join)
     rolled_value = expression.eval
 
-    "Rolling #{dice_expr.join(' ')}```#{expression.print_eval} = #{rolled_value}```"
+    "Rolling #{dice_expr.join(' ')}\n```#{expression.print_eval} = #{rolled_value}```"
   rescue ParserError => err
     err.message
   rescue ZeroDivisionError
