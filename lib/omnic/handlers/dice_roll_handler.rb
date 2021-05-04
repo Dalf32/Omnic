@@ -69,15 +69,17 @@ class DiceRollHandler < CommandHandler
   end
 
   def list_saved_rolls(_event)
-    rolls = user_redis.smembers(ROLL_SET_KEY)
+    rolls = saved_rolls
 
     return 'No saved rolls yet!' if rolls.empty?
 
-    list_text = ''
+    longest_name = rolls.keys.map(&:length).max
+    name_fmt = "%-#{longest_name}s"
 
-    rolls.sort.each_slice(3) do |row|
-      list_text += row.map { |roll| format('%-16s', roll) }.join(' ') + "\n"
-    end
+    list_text = rolls.map do |name, expr|
+      expression = build_expression(expr)
+      "#{format(name_fmt, name)} = #{expression.print}"
+    end.join("\n")
 
     "***Available rolls***\n```#{list_text}```"
   end
