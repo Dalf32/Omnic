@@ -16,9 +16,19 @@ class DiceRollHandler < CommandHandler
     .feature(:dice).min_args(2).usage('saveroll <roll_name> <dice_expr>')
     .description('Saves the given dice expression to the given name, which can then be used on its own or within another expression.')
 
+  command(:savesharedroll, :save_shared_roll)
+    .feature(:dice).min_args(2).usage('savesharedroll <roll_name> <dice_expr>')
+    .pm_enabled(false).permissions(:manage_channels)
+    .description('Saves the given dice expression to the given name, which can then be used on its own or within another expression.')
+
   command(:delroll, :delete_roll)
     .feature(:dice).args_range(1, 1).usage('delroll <roll_name>')
     .description('Deletes the saved roll with the given name.')
+
+  command(:delsharedroll, :delete_shared_roll)
+    .feature(:dice).args_range(1, 1).usage('delsharedroll <roll_name>')
+    .pm_enabled(false).permissions(:manage_channels)
+    .description('Deletes the saved shared roll with the given name.')
 
   command(:listrolls, :list_saved_rolls)
     .feature(:dice).no_args.usage('listrolls')
@@ -43,45 +53,31 @@ class DiceRollHandler < CommandHandler
   end
 
   def save_roll(_event, roll_name, *dice_expr)
-    roll_name.downcase!
+    save_dice_roll(roll_name, dice_expr, user_redis)
+  end
 
-    return "You already have a roll saved under the name #{roll_name}." if user_redis.sismember(ROLL_SET_KEY, roll_name)
-
-    build_expression(dice_expr.join)
-
-    user_redis.sadd(ROLL_SET_KEY, roll_name)
-    user_redis.set(get_roll_key(roll_name), dice_expr.join)
-
-    "Roll saved: #{roll_name} = #{dice_expr.join(' ')}"
-  rescue ParserError => err
-    err.message
+  def save_shared_roll(_event, roll_name, *dice_expr)
+    save_dice_roll(roll_name, dice_expr, server_redis)
   end
 
   def delete_roll(_event, roll_name)
-    roll_name.downcase!
+    delete_dice_roll(roll_name, user_redis)
+  end
 
-    return "No roll saved matching the name #{roll_name}" unless user_redis.sismember(ROLL_SET_KEY, roll_name)
-
-    user_redis.del(get_roll_key(roll_name))
-    user_redis.srem(ROLL_SET_KEY, roll_name)
-
-    "Roll deleted: #{roll_name}"
+  def delete_shared_roll(_event, roll_name)
+    delete_dice_roll(roll_name, server_redis)
   end
 
   def list_saved_rolls(_event)
-    rolls = saved_rolls
+    user_rolls = saved_rolls(user_redis)
+    server_rolls = saved_rolls(server_redis)
 
-    return 'No saved rolls yet!' if rolls.empty?
+    return 'No saved rolls yet!' if user_rolls.empty? && server_rolls.empty?
 
-    longest_name = rolls.keys.map(&:length).max
-    name_fmt = "%-#{longest_name}s"
-
-    list_text = rolls.map do |name, expr|
-      expression = build_expression(expr)
-      "#{format(name_fmt, name)} = #{expression.print}"
-    end.join("\n")
-
-    "***Available rolls***\n```#{list_text}```"
+    list_text = '***Available rolls***'
+    list_text += "\n*Your rolls*\n```#{format_saved_rolls(user_rolls)}```" unless user_rolls.empty?
+    list_text += "\n*Shared rolls*\n```#{format_saved_rolls(server_rolls)}```" unless server_rolls.empty?
+    list_text
   end
 
   def show_roll_help(_event)
@@ -101,7 +97,7 @@ class DiceRollHandler < CommandHandler
       Likewise keeping only the lowest n results is done with `kl` and the number of results to keep.
         *ex:* `4d6k2! + 14` *would roll 4 6-sided dice, explode them, keep the highest 2 results, then add 14.*
 
-      Saved rolls can be used simply by including the name the roll was saved under within the expression.
+      Saved rolls can be used simply by including the name the roll was saved under within the expression. Your saved rolls take precedence over shared ones.
         *ex: If we have the roll* `2d20k1` *saved with the name 'adv', then rolling* `(adv + 14) * 2` *would expand the 'adv' roll and we would roll* `(2d20k1 + 14) * 2`
 
       An expression can be repeated a number of times by appending the keyword `Repeat` followed by a basic expression or number.
@@ -115,20 +111,57 @@ class DiceRollHandler < CommandHandler
   SAVED_ROLL_KEY = 'saved_roll'.freeze unless defined? SAVED_ROLL_KEY
 
   def build_expression(dice_expr)
-    ExpressionBuilder.build(dice_expr, saved_rolls).tap do |expression|
+    saved_die_rolls = saved_rolls(server_redis).merge(saved_rolls(user_redis))
+    ExpressionBuilder.build(dice_expr, saved_die_rolls).tap do |expression|
       log.debug("Expression: #{expression}")
     end
   end
 
-  def saved_rolls
-    roll_names = user_redis.smembers(ROLL_SET_KEY)
+  def saved_rolls(redis)
+    roll_names = redis.smembers(ROLL_SET_KEY)
     return {} if roll_names.empty?
 
-    roll_values = user_redis.mget(roll_names.map { |roll_name| get_roll_key(roll_name) })
+    roll_values = redis.mget(roll_names.map { |roll_name| get_roll_key(roll_name) })
     Hash[roll_names.zip(roll_values)]
   end
 
   def get_roll_key(roll_name)
     SAVED_ROLL_KEY + ':' + roll_name
+  end
+
+  def save_dice_roll(roll_name, dice_expr, redis)
+    roll_name.downcase!
+
+    return "You already have a roll saved under the name #{roll_name}." if redis.sismember(ROLL_SET_KEY, roll_name)
+
+    build_expression(dice_expr.join)
+
+    redis.sadd(ROLL_SET_KEY, roll_name)
+    redis.set(get_roll_key(roll_name), dice_expr.join)
+
+    "Roll saved: #{roll_name} = #{dice_expr.join(' ')}"
+  rescue ParserError => err
+    err.message
+  end
+
+  def delete_dice_roll(roll_name, redis)
+    roll_name.downcase!
+
+    return "No roll saved matching the name #{roll_name}" unless redis.sismember(ROLL_SET_KEY, roll_name)
+
+    redis.del(get_roll_key(roll_name))
+    redis.srem(ROLL_SET_KEY, roll_name)
+
+    "Roll deleted: #{roll_name}"
+  end
+
+  def format_saved_rolls(rolls)
+    longest_name = rolls.keys.map(&:length).max
+    name_fmt = "%-#{longest_name}s"
+
+    rolls.map do |name, expr|
+      expression = build_expression(expr)
+      "#{format(name_fmt, name)} = #{expression.print}"
+    end.join("\n")
   end
 end
