@@ -77,6 +77,39 @@ class DiceTerm
     @kept_rolls.reduce(:+)
   end
 
+  def min
+    if @all_rolls.empty?
+      @all_rolls = (1..[1, @num_dice.to_i].max).map { 1 }
+      @kept_rolls = @all_rolls
+      @kept_rolls = keep_high_dice(@all_rolls) if @keep_high
+      @kept_rolls = keep_low_dice(@all_rolls) if @keep_low
+    end
+
+    @kept_rolls.reduce(:+)
+  end
+
+  def max
+    if @all_rolls.empty?
+      @all_rolls = (1..[1, @num_dice.to_i].max).map { @dice_rank.to_i }
+      @kept_rolls = @all_rolls
+      @kept_rolls = keep_high_dice(@all_rolls) if @keep_high
+      @kept_rolls = keep_low_dice(@all_rolls) if @keep_low
+    end
+
+    @kept_rolls.reduce(:+)
+  end
+
+  def avg
+    if @all_rolls.empty?
+      @all_rolls = (1..[1, @num_dice.to_i].max).map { (1 + @dice_rank.to_i) / 2.0 }
+      @kept_rolls = @all_rolls
+      @kept_rolls = keep_high_dice(@all_rolls) if @keep_high
+      @kept_rolls = keep_low_dice(@all_rolls) if @keep_low
+    end
+
+    @kept_rolls.reduce(:+).truncate
+  end
+
   def eval_and_print
     rolled_value = eval
     "#{print_eval} = #{rolled_value}"
@@ -141,7 +174,7 @@ class DiceTerm
         output = "*#{output}*"
       end
 
-      output += '!' if @is_exploding && roll == @dice_rank.to_i
+      output = "#{output}!" if @is_exploding && roll == @dice_rank.to_i
 
       output
     end.join(' + ')

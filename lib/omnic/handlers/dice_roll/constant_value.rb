@@ -19,6 +19,10 @@ class ConstantValue
     @value.to_i
   end
 
+  alias min eval
+  alias max eval
+  alias avg eval
+
   def print
     @value.to_i
   end

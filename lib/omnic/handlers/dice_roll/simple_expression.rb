@@ -21,6 +21,10 @@ class SimpleExpression
     @operator.eval(@left_expr.eval, @right_expr.eval)
   end
 
+  def method_missing(name)
+    @operator.eval(@left_expr.send(name), @right_expr.send(name))
+  end
+
   def eval_and_print
     rolled_value = eval
     "#{print_eval} = #{rolled_value}"

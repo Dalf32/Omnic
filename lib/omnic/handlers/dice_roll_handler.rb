@@ -38,6 +38,14 @@ class DiceRollHandler < CommandHandler
     .feature(:dice).no_args.usage('rollhelp')
     .description('Shows an explanation of some of the dice expression syntax.')
 
+  command(:tokenroll, :tokenize_roll)
+    .feature(:dice).owner_only(true).min_args(1).usage('tokenroll <dice_expr>')
+    .description('Tokenizes but does not fully build the given dice expression, showing just the tokens.')
+
+  command(:buildroll, :build_roll)
+    .feature(:dice).owner_only(true).min_args(1).usage('buildroll <dice_expr>')
+    .description('Parses but does not roll the given dice expression, showing the built expression.')
+
   def redis_name
     :dice_roll
   end
@@ -102,13 +110,39 @@ class DiceRollHandler < CommandHandler
 
       An expression can be repeated a number of times by appending the keyword `Repeat` followed by a basic expression or number.
         *ex:* `1d20 + 2 Repeat 3` *would roll* `1d20 + 2` *3 times.*
+
+      Functions may be invoked by entering the function name followed by an expression enclosed in parenthesis.
+        *ex:* `Max(2d6 + 4)` *would call the* `Max` *function on the expression* `2d6 + 4`
+      Supported functions:```
+      Min: Calculates the minimum possible result (ignores exploding dice)
+      Max: Calculates the maximum possible result (ignores exploding dice)
+      Avg: Calculates the average result (ignores exploding dice)```
     HELP
+  end
+
+  def tokenize_roll(_event, *dice_expr)
+    expression = tokenize_expression(dice_expr.join)
+
+    "Tokenized #{dice_expr.join(' ')} as\n```#{expression}```"
+  end
+
+  def build_roll(_event, *dice_expr)
+    expression = build_expression(dice_expr.join)
+
+    "Parsed #{dice_expr.join(' ')} as\n```#{expression}```"
+  rescue ParserError => err
+    err.message
   end
 
   private
 
   ROLL_SET_KEY = 'rolls'.freeze unless defined? ROLL_SET_KEY
   SAVED_ROLL_KEY = 'saved_roll'.freeze unless defined? SAVED_ROLL_KEY
+
+  def tokenize_expression(dice_expr)
+    saved_die_rolls = saved_rolls(server_redis).merge(saved_rolls(user_redis))
+    ExpressionBuilder.tokenize(dice_expr, saved_die_rolls)
+  end
 
   def build_expression(dice_expr)
     saved_die_rolls = saved_rolls(server_redis).merge(saved_rolls(user_redis))
@@ -118,6 +152,8 @@ class DiceRollHandler < CommandHandler
   end
 
   def saved_rolls(redis)
+    return {} if redis.nil?
+
     roll_names = redis.smembers(ROLL_SET_KEY)
     return {} if roll_names.empty?
 
