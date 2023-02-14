@@ -141,7 +141,7 @@ class ExpressionBuilder
         operator = BinaryOperator.new(token)
 
         expr_stack.push(SimpleExpression.new(left_expr, operator, right_expr))
-      when /\d*d\d+/i
+      when /\d*d(\d+|F)/i
         expr_stack.push(DiceTerm.new(token))
       when REPEAT_OPERATOR
         repeat_expr = RepeatExpression.new(expr_stack.pop)

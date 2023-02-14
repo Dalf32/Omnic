@@ -90,7 +90,7 @@ class DiceRollHandler < CommandHandler
 
   def show_roll_help(_event)
     <<~HELP
-      A basic expression contains the Number of Dice, followed by `d`, finally followed by the Dice Rank.
+      A basic expression contains the Number of Dice, followed by `d`, finally followed by the Dice Rank. The Rank may be a integer number or 'F' for FATE dice.
         *ex:* `4d6` *would roll 4 6-sided dice, and return the result.*
 
       Basic math can be performed with the results of the dice rolls, and multiple rolls can be used in the same expression.

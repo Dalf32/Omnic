@@ -36,6 +36,7 @@ class DiceTerm
 
     @num_dice, @dice_rank = *expression.split('d')
     @num_dice = '1' if @num_dice.empty?
+    @is_fate_dice = @dice_rank.upcase == 'F'
     @kept_rolls = []
     @all_rolls = []
   end
@@ -48,13 +49,13 @@ class DiceTerm
     end
 
     begin
-      Integer(@dice_rank)
+      @is_fate_dice || Integer(@dice_rank)
     rescue ArgumentError
-      raise ParserError, "#{@dice_rank} is not a valid Integer"
+      raise ParserError, "#{@dice_rank} is not a valid Integer or 'F'"
     end
 
     raise ParserError, 'Number of Dice cannot be 0' if @num_dice.to_i.zero?
-    raise ParserError, 'Dice Rank cannot be 0' if @dice_rank.to_i.zero?
+    raise ParserError, 'Dice Rank cannot be 0' if @dice_rank.to_i.zero? && !@is_fate_dice
 
     begin
       Integer(@keep_count)
@@ -116,7 +117,8 @@ class DiceTerm
   end
 
   def print
-    "#{@num_dice.to_i}d#{@dice_rank.to_i}#{keep_str(@keep_count.to_i)}#{explode_str}"
+    rank = @is_fate_dice ? 'F' : @dice_rank.to_i
+    "#{@num_dice.to_i}d#{rank}#{keep_str(@keep_count.to_i)}#{explode_str}"
   end
 
   def print_eval
@@ -146,7 +148,13 @@ class DiceTerm
   end
 
   def roll_die
+    return roll_fate_die if @is_fate_dice
+
     rand(1..@dice_rank.to_i)
+  end
+
+  def roll_fate_die
+    [-1, 0, 1].sample
   end
 
   def keep_str(count)
@@ -165,18 +173,23 @@ class DiceTerm
 
   def format_die_rolls
     unprinted_kept_rolls = @kept_rolls.dup
+    separator = @is_fate_dice ? ' ' : ' + '
 
     @all_rolls.map do |roll|
-      output = roll
+      output = @is_fate_dice ? { -1 => '-', 0 => '0', 1 => '+' }[roll] : roll
 
       if (@keep_high || @keep_low) && unprinted_kept_rolls.include?(roll)
         unprinted_kept_rolls.delete_at(unprinted_kept_rolls.index(roll))
         output = "*#{output}*"
       end
 
-      output = "#{output}!" if @is_exploding && roll == @dice_rank.to_i
+      output = "#{output}!" if @is_exploding && exploded?(roll)
 
       output
-    end.join(' + ')
+    end.join(separator)
+  end
+
+  def exploded?(roll)
+    roll == @is_fate_dice ? 1 : @dice_rank.to_i
   end
 end
