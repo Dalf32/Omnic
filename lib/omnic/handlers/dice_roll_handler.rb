@@ -3,6 +3,7 @@
 # Author::  Kyle Mullins
 
 require_relative 'dice_roll/expression_builder'
+require_relative 'dice_roll/pool_builder'
 
 class DiceRollHandler < CommandHandler
   feature :dice, default_enabled: true,
@@ -45,6 +46,10 @@ class DiceRollHandler < CommandHandler
   command(:buildroll, :build_roll)
     .feature(:dice).owner_only(true).min_args(1).usage('buildroll <dice_expr>')
     .description('Parses but does not roll the given dice expression, showing the built expression.')
+
+  command(:rollpool, :roll_pool)
+    .feature(:dice).min_args(1).usage('rollpool <dice_pool>')
+    .description('Rolls a pool of dice and just displays the results without doing any math operations.')
 
   def redis_name
     :dice_roll
@@ -130,6 +135,14 @@ class DiceRollHandler < CommandHandler
     expression = build_expression(dice_expr.join)
 
     "Parsed #{dice_expr.join(' ')} as\n```#{expression}```"
+  rescue ParserError => err
+    err.message
+  end
+
+  def roll_pool(_event, *dice_pool)
+    pool = PoolBuilder.build(dice_pool.join(','))
+
+    "Rolling pool #{dice_pool.join(' ')}\n```#{pool.eval_and_print}```"
   rescue ParserError => err
     err.message
   end
