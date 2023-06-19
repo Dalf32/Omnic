@@ -51,11 +51,16 @@ class DiceRollHandler < CommandHandler
     .feature(:dice).min_args(1).usage('rollpool <dice_pool>')
     .description('Rolls a pool of dice and just displays the results without doing any math operations.')
 
+  command(:reroll, :reroll)
+    .feature(:dice).no_args.usage('reroll')
+    .description('Rerolls the last thing you rolled.')
+
   def redis_name
     :dice_roll
   end
 
   def roll_dice(_event, *dice_expr)
+    save_last_roll(:roll_dice, dice_expr.join(' '))
     expression = build_expression(dice_expr.join)
 
     "Rolling #{dice_expr.join(' ')}\n```#{expression.eval_and_print}```"
@@ -140,6 +145,7 @@ class DiceRollHandler < CommandHandler
   end
 
   def roll_pool(_event, *dice_pool)
+    save_last_roll(:roll_pool, dice_pool.join(' '))
     pool = PoolBuilder.build(dice_pool.join(','))
 
     "Rolling pool #{dice_pool.join(' ')}\n```#{pool.eval_and_print}```"
@@ -147,10 +153,19 @@ class DiceRollHandler < CommandHandler
     err.message
   end
 
+  def reroll(event)
+    last_roll = get_last_roll
+    return 'No recent roll.' if last_roll.nil?
+
+    last_roll = last_roll.split(' ')
+    send(last_roll.first, event, last_roll[1..-1])
+  end
+
   private
 
   ROLL_SET_KEY = 'rolls'.freeze unless defined? ROLL_SET_KEY
   SAVED_ROLL_KEY = 'saved_roll'.freeze unless defined? SAVED_ROLL_KEY
+  LAST_ROLL_KEY = 'last_roll'.freeze unless defined? LAST_ROLL_KEY
 
   def tokenize_expression(dice_expr)
     saved_die_rolls = saved_rolls(server_redis).merge(saved_rolls(user_redis))
@@ -212,5 +227,13 @@ class DiceRollHandler < CommandHandler
       expression = build_expression(expr)
       "#{format(name_fmt, name)} = #{expression.print}"
     end.join("\n")
+  end
+
+  def save_last_roll(method, roll_text)
+    user_redis.setex(LAST_ROLL_KEY, 60 * 60, "#{method} #{roll_text}")
+  end
+
+  def get_last_roll
+    user_redis.get(LAST_ROLL_KEY)
   end
 end
