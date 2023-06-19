@@ -38,7 +38,7 @@ class PoolBuilder
   end
 
   def self.build_pool(tokens)
-    DicePool.new.tap { |pool| tokens.each { |token| pool << DiceTerm.new(token) } }
+    DicePool.new.tap { |pool| tokens.each { |token| pool << DiceTerm.new(token, is_pool: true) } }
   end
 
   private_class_method :tokenize, :validate, :build_pool

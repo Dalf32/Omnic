@@ -5,9 +5,10 @@
 require_relative 'parser_error'
 
 class DiceTerm
-  def initialize(expression)
+  def initialize(expression, is_pool: false)
     expression.downcase!
 
+    @is_pool = is_pool
     @is_exploding = false
 
     if expression.end_with?('!')
@@ -173,7 +174,7 @@ class DiceTerm
 
   def format_die_rolls
     unprinted_kept_rolls = @kept_rolls.dup
-    separator = @is_fate_dice ? ' ' : ' + '
+    separator = @is_fate_dice || @is_pool ? ' ' : ' + '
 
     @all_rolls.map do |roll|
       output = @is_fate_dice ? { -1 => '-', 0 => '0', 1 => '+' }[roll] : roll
