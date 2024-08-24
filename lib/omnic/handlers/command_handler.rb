@@ -13,14 +13,14 @@ class CommandHandler
 
   def self.command(command, command_method, **args)
     OmnicCommand.new(self, command, command_method).tap do |cmd|
-      cmd.other_params(args)
+      cmd.other_params(**args)
       Omnic.commands << cmd
     end
   end
 
   def self.event(event, event_method, **args)
     OmnicEvent.new(self, event, event_method).tap do |evt|
-      evt.other_params(args)
+      evt.other_params(**args)
       Omnic.events << evt
     end
   end

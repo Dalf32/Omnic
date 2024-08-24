@@ -13,7 +13,7 @@ class AuditStore
   end
 
   def channel_set?
-    @redis.exists(:audit_channel)
+    @redis.exists?(:audit_channel)
   end
 
   def can_encrypt?
@@ -48,7 +48,7 @@ class AuditStore
   def cached_message(message_id)
     cache_key = cache_key(message_id)
 
-    if @redis.exists(cache_key)
+    if @redis.exists?(cache_key)
       return @redis.hgetall(cache_key).to_h.tap do |result|
         if can_encrypt?
           encrypted = result['text'].force_encoding('ASCII-8BIT')

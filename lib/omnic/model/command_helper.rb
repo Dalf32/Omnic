@@ -48,11 +48,11 @@ module CommandHelper
   end
 
   def get_server_namespace(server)
-    "SERVER:#{server.id}"
+    "SERVER:#{server.respond_to?(:id) ? server.id : server}"
   end
 
   def get_user_namespace(user)
-    "USER:#{user.id}"
+    "USER:#{user.respond_to?(:id) ? user.id : user}"
   end
 
   def format_obj(obj)

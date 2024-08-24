@@ -37,7 +37,7 @@ module Omnic
       no_permission_message: "I don't have permission to perform that action on this Server."
     }
 
-    @bot ||= Discordrb::Commands::CommandBot.new(attributes)
+    @bot ||= Discordrb::Commands::CommandBot.new(**attributes)
   end
 
   def self.redis
@@ -298,7 +298,7 @@ end
 # Main
 should_restart = false
 
-Discordrb::Bot.prepend(BotExt)
+# Discordrb::Bot.prepend(BotExt)
 Discordrb::Logger.prepend(LoggerHook)
 Discordrb::Role.prepend(RoleExt)
 
@@ -351,6 +351,8 @@ begin
       puts Omnic.bot.invite_url
     when 'events'
       puts "Registered events: #{Omnic.events.map(&:id).join(', ')}"
+    when 'version'
+      puts "Using ruby version #{RUBY_VERSION}"
     else
       puts 'Unrecognized command.'
     end

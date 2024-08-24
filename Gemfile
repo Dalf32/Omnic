@@ -1,8 +1,9 @@
 source 'https://rubygems.org'
 
 gem 'chronic_duration', '>=0.10.6'
+gem 'concurrent-ruby'
 gem 'configatron', '>=4.5'
-gem 'discordrb', '>=3.3.0'
+gem 'discordrb', '~>3.5'
 gem 'logging', '>=2.2'
 gem 'redis', '>=4.2.1'
 gem 'redis-namespace', '>=1.6', '<2.0'
