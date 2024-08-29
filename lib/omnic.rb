@@ -23,6 +23,7 @@ require_relative 'omnic/ext/logger_hook'
 require_relative 'omnic/ext/syslog'
 require_relative 'omnic/ext/integer_ext'
 require_relative 'omnic/ext/warning'
+require_relative 'omnic/util/timed_cache'
 
 module Omnic
   def self.config
@@ -152,6 +153,10 @@ module Omnic
     @mutexes ||= {}
   end
 
+  def self.cache
+    @cache ||= TimedCache.new(config.default_cache_time)
+  end
+
   def self.setup_redis
     return nil unless config.redis.key?(:url)
 
@@ -208,6 +213,8 @@ module Omnic
     config.advanced_commands = false
     config.handlers_list = []
     config.restart_on_error = true
+    config.default_cache_time = 60 * 60 * 24
+
     config.logging do |log|
       log.date_format = '%Y-%m-%d %H:%M:%S'
       log.format = "[%d %5l] %m\n"

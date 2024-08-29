@@ -29,6 +29,18 @@ class CommandHandler
     Omnic.features[name] = Feature.new(name, default_enabled, description)
   end
 
+  def self.cache_object(key, create_method)
+    CommandHandler.cached_objects[cache_key(self, key)] = create_method
+  end
+
+  def self.cache_key(calling_class, key)
+    "#{calling_class.name}//#{key}"
+  end
+
+  def self.cached_objects
+    @cached_objects ||= {}
+  end
+
   def initialize(bot, server, user)
     @bot = bot
     @server = server
@@ -124,6 +136,20 @@ class CommandHandler
     log.debug("Bot status cleared by #{self.class} (priority #{priority})")
     Omnic.redis.del(PRIO_KEY)
     Omnic.bot.update_status('online', nil, nil, 0, false, 0)
+  end
+
+  def cached_object(key, expiration_s = nil)
+    cache_key = CommandHandler.cache_key(self.class, key)
+    return nil unless CommandHandler.cached_objects.key?(cache_key)
+    return Omnic.cache[cache_key] if Omnic.cache.key?(cache_key)
+
+    log.debug("Object with key #{cache_key} is not present in cache, creating a new one")
+    new_obj = self.send(CommandHandler.cached_objects[cache_key])
+    if expiration_s.nil?
+      Omnic.cache[cache_key] = new_obj
+    else
+      Omnic.cache.put(cache_key, new_obj, expiration_s)
+    end
   end
 
   private
