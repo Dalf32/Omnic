@@ -200,8 +200,7 @@ module Omnic
 
       if config.logging.syslog.enabled
         syslog_log = Logging.appenders.syslog(**config.logging.syslog,
-                                              layout: layout,
-                                              level: config.logging.syslog.level)
+                                              layout: layout)
         log.add_appenders(syslog_log)
       end
     end
