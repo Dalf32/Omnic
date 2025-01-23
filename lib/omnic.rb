@@ -4,8 +4,9 @@
 
 begin
   load 'rbnacl_conf.rb'
+  require 'rbnacl'
 rescue LoadError
-  # We are ok if this file doesn't exist, it is only needed if you want to use voice functionality
+  puts "WARN: RBNACL could not be loaded, encryption functionality will not be available."
 end
 
 require 'discordrb'
