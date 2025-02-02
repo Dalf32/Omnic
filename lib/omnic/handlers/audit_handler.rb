@@ -105,7 +105,7 @@ class AuditHandler < CommandHandler
     return unless audit_store.channel_set?
 
     message = "***#{event_type}***\n#{'-' * event_type.length}"
-    message += data.map { |key, value| "\n**#{key.capitalize}**: #{value}" }.join
+    message += data.map { |key, value| "\n**#{format_data_key(key)}**: #{value}" }.join
 
     audit_channel.send_message(message)
   end
@@ -143,5 +143,9 @@ class AuditHandler < CommandHandler
       channel <channel> - Sets the Channel Audit posts to
       disable - Disables Auditing
     HELP
+  end
+
+  def format_data_key(key)
+    key.to_s.gsub('_', ' ').capitalize
   end
 end
