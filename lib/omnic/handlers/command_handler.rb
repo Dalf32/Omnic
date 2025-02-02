@@ -175,16 +175,12 @@ class CommandHandler
 
   def search_users(user_text)
     mention = @bot.parse_mention(user_text)
+    return [@server.member(mention.id)] unless mention.nil?
 
-    if !mention.nil?
-      [@server.member(mention.id)]
-    elsif user_text.include?('#')
-      @server.members.find_all { |member| member.distinct == user_text }
-    else
-      @server.members.find_all do |member|
-        member.nick&.casecmp(user_text)&.zero? ||
-          member.username.casecmp(user_text).zero?
-      end
+    @server.members.find_all do |member|
+      member.distinct.casecmp?(user_text) ||
+        member.nick&.casecmp?(user_text) ||
+        member.username.casecmp?(user_text)
     end
   end
 
