@@ -78,11 +78,16 @@ class AuditHandler < CommandHandler
     return if event.from_bot?
 
     message_hash = audit_store.cached_message(event.message.id)
+    message_has_embeds = event.message.embeds.any?
 
     data_hash = if message_hash['message_available'] &&
                    event.message.pinned?.to_s != message_hash['pinned']
       { text: message_hash['text'],
         status: event.message.pinned? ? 'Pinned' : 'Unpinned' }
+    elsif (message_hash['has_embed'] || message_has_embeds) != message_has_embeds
+      return if message_has_embeds # Skip audit if it was just Discord adding an embed
+
+      { embed: 'Removed', text: event.content }
     else
       { old_text: message_hash['text'], new_text: event.content }
     end

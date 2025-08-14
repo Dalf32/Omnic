@@ -41,7 +41,7 @@ class AuditStore
     text = can_encrypt? ? Omnic.encryption.encrypt(message.text) : message.text
     text = text.force_encoding('UTF-8')
     @redis.hmset(cache_key, :author, message.author.distinct, :text, text,
-                 :pinned, message.pinned?)
+                 :pinned, message.pinned?, :has_embed, message.embeds.any?)
     @redis.expire(cache_key, @message_cache_time * 60)
   end
 
