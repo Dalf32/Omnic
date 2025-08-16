@@ -110,7 +110,8 @@ class CommandHandler
     end
   end
 
-  def update_bot_status(status, activity, url, *args)
+  def update_bot_status(status: STATUS_ONLINE, activity: nil, url: nil,
+                        activity_type: Discordrb::Activity::GAME)
     priority = determine_status_priority
     cur_prio = current_status_priority
 
@@ -120,8 +121,10 @@ class CommandHandler
     end
 
     log.debug("Bot status set by #{self.class} (priority #{priority})")
-    Omnic.redis.set(PRIO_KEY, priority)
-    Omnic.bot.update_status(status, activity, url, *args)
+    Omnic.redis.set(PRIO_KEY, priority, ex: PRIO_EXPIRATION)
+    Omnic.bot.update_status(status, activity, url, 0, false, activity_type)
+
+    nil
   end
 
   def clear_bot_status
@@ -135,7 +138,11 @@ class CommandHandler
 
     log.debug("Bot status cleared by #{self.class} (priority #{priority})")
     Omnic.redis.del(PRIO_KEY)
-    Omnic.bot.update_status('online', nil, nil, 0, false, 0)
+    ALL_ACTIVITIES.each do |activity_type|
+      Omnic.bot.update_status(STATUS_ONLINE, nil, nil, 0, false, activity_type)
+    end
+
+    nil
   end
 
   def cached_object(key, expiration_s = nil)
@@ -155,6 +162,18 @@ class CommandHandler
   private
 
   PRIO_KEY = "GLOBAL:bot_status_prio" unless defined? PRIO_KEY
+  PRIO_EXPIRATION = 60 * 60 * 6 unless defined? PRIO_EXPIRATION # 6 hours
+
+  STATUS_ONLINE = 'online'.freeze unless defined? STATUS_ONLINE
+  STATUS_DND = 'dnd'.freeze unless defined? STATUS_DND
+  STATUS_IDLE = 'idle'.freeze unless defined? STATUS_IDLE
+  STATUS_INVISIBLE = 'invisible'.freeze unless defined? STATUS_INVISIBLE
+
+  ALL_ACTIVITIES = [
+    Discordrb::Activity::GAME, Discordrb::Activity::STREAMING,
+    Discordrb::Activity::LISTENING, Discordrb::Activity::WATCHING,
+    Discordrb::Activity::CUSTOM, Discordrb::Activity::COMPETING
+  ] unless defined? ALL_ACTIVITIES
 
   def config_section(handler)
     return nil unless handler.respond_to?(:config_name)
