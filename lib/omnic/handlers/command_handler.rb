@@ -178,7 +178,7 @@ class CommandHandler
     return [@server.member(mention.id)] unless mention.nil?
 
     @server.members.find_all do |member|
-      member.distinct.casecmp?(user_text) ||
+      member.global_name&.casecmp?(user_text) ||
         member.nick&.casecmp?(user_text) ||
         member.username.casecmp?(user_text)
     end
