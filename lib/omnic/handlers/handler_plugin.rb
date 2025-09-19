@@ -29,10 +29,10 @@ class HandlerPlugin < CommandHandler
     plugin_target.event(event, event_method, **args)
   end
 
-  def self.feature(*args)
+  def self.feature(feature_name, **args)
     raise PLUGIN_TARGET_ERROR unless respond_to?(:plugin_target)
 
-    plugin_target.feature(*args)
+    plugin_target.feature(feature_name, **args)
   end
 
   def initialize(handler)
