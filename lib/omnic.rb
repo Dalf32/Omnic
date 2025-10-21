@@ -26,6 +26,7 @@ require_relative 'omnic/ext/integer_ext'
 require_relative 'omnic/ext/string_ext'
 require_relative 'omnic/ext/warning'
 require_relative 'omnic/util/timed_cache'
+require_relative 'omnic/ext/float_ext'
 
 module Omnic
   def self.config
@@ -311,6 +312,7 @@ Discordrb::Logger.prepend(LoggerHook)
 Discordrb::Role.prepend(RoleExt)
 
 Integer.include(IntegerExt)
+Float.include(FloatExt)
 String.include(StringExt)
 
 config_file = ARGV.empty? ? 'config.rb' : ARGV[0]
