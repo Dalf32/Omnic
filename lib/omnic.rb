@@ -9,24 +9,24 @@ rescue LoadError
   puts "WARN: RBNACL could not be loaded, encryption functionality will not be available."
 end
 
-require 'discordrb'
+require 'concurrent'
 require 'configatron/core'
+require 'discordrb'
+require 'logging'
 require 'redis'
 require 'redis/namespace'
-require 'logging'
-require 'concurrent'
 
 require_relative 'omnic/handlers/command_handler'
 require_relative 'omnic/handlers/handler_plugin'
 require_relative 'omnic/ext/bot_ext'
-require_relative 'omnic/ext/role_ext'
-require_relative 'omnic/ext/logger_hook'
-require_relative 'omnic/ext/syslog'
+require_relative 'omnic/ext/float_ext'
 require_relative 'omnic/ext/integer_ext'
+require_relative 'omnic/ext/logger_hook'
+require_relative 'omnic/ext/role_ext'
 require_relative 'omnic/ext/string_ext'
+require_relative 'omnic/ext/syslog'
 require_relative 'omnic/ext/warning'
 require_relative 'omnic/util/timed_cache'
-require_relative 'omnic/ext/float_ext'
 
 module Omnic
   def self.config
