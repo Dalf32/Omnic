@@ -13,7 +13,10 @@ module IntegerExt
   private
 
   def format_large_currency
-    if self >= 1_000_000_000_000
+    if self >= 1_000_000_000_000_000
+      suffix = 'Quadrillion'
+      val = self / 1_000_000_000_000_000.0
+    elsif self >= 1_000_000_000_000
       suffix = 'Trillion'
       val = self / 1_000_000_000_000.0
     elsif self >= 1_000_000_000
