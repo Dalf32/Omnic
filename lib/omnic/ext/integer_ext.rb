@@ -13,20 +13,24 @@ module IntegerExt
   private
 
   def format_large_currency
-    if self >= 1_000_000_000_000_000
-      suffix = 'Quadrillion'
+    if self >= 1_000_000_000_000_000_000
+      exp = self.digits.count - 1
+      suffix = "e#{exp}"
+      val = self / 10.0**exp
+    elsif self >= 1_000_000_000_000_000
+      suffix = ' Quadrillion'
       val = self / 1_000_000_000_000_000.0
     elsif self >= 1_000_000_000_000
-      suffix = 'Trillion'
+      suffix = ' Trillion'
       val = self / 1_000_000_000_000.0
     elsif self >= 1_000_000_000
-      suffix = 'Billion'
+      suffix = ' Billion'
       val = self / 1_000_000_000.0
     else
-      suffix = 'Million'
+      suffix = ' Million'
       val = self / 1_000_000.0
     end
 
-    "#{val.format_currency} #{suffix}"
+    "#{val.format_currency}#{suffix}"
   end
 end
