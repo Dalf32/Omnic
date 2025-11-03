@@ -89,6 +89,8 @@ class AuditHandler < CommandHandler
 
       { embed: 'Removed', text: event.content }
     else
+      return if message_hash['text'] == event.content # Skip audit if the messages are the same
+
       { old_text: message_hash['text'], new_text: event.content }
     end
 
