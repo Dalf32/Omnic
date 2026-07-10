@@ -6,7 +6,7 @@ require_relative 'echo/command_store'
 require_relative 'echo/command_html_renderer'
 
 class EchoHandler < CommandHandler
-  feature :echo, default_enabled: true,
+  feature :echo, default_enabled: false,
                  description: 'Allows for storage and recall of arbitrary text.'
 
   event(:message, :on_message)

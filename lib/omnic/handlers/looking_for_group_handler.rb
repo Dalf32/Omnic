@@ -3,7 +3,7 @@
 # Author::  Kyle Mullins
 
 class LookingForGroupHandler < CommandHandler
-  feature :lfg, default_enabled: true,
+  feature :lfg, default_enabled: false,
                 description: 'Allows Users to give themselves special roles telling others what games they play, and announce when they want to play.'
 
   command(:lfg, :looking_for_group)
