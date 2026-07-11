@@ -1,11 +1,11 @@
 # Config
 
 configure do |config|
-  config.bot_token = '<bot_token>>'
-  config.client_id = 0 #client_id
+  config.bot_token = '' # Discord bot token
+  config.client_id = 0 # Discord application id
   config.command_prefix = '!'
   config.advanced_commands = false
-  config.owner_id = 0 #bot_owner_id
+  config.owner_id = 0 # Bot owner Discord user id
   config.restart_on_error = true
 
   config.logging do |log|
@@ -30,22 +30,31 @@ configure do |config|
   end
 
   config.redis do |redis|
-    redis.url = 'redis://127.0.0.1:6379/0'
+    redis.url = 'redis://127.0.0.1:6379/0' # Change if not locally-hosted redis
     redis.timeout = 2
   end
 
   config.encryption do |encrypt|
-    encrypt.private_key = ''
+    encrypt.private_key = '' # Certificate key needed primarily for auditing
   end
 
-  config.handlers_list = [
-    'omnic/handlers/greeting_handler.rb',
-    'omnic/handlers/echo_handler.rb',
-    'omnic/handlers/admin_functions_handler.rb',
-    'omnic/handlers/help_handler.rb'
+  config.handlers_list = %w[
+    omnic/core_handlers.rb
+    omnic/extra_handlers.rb
   ]
+
+  config.plugins_list %w[]
 
   config.handlers.echo do |echo|
     echo.prefix = '~'
+  end
+
+  config.handlers.reminders do |reminders|
+    reminders.sleep_interval = 1
+    reminders.max_response_time = 30
+  end
+
+  config.handlers.audit do |audit|
+    audit.message_cache_time = 120 # Time in minutes to keep messages cached, 0 to not cache messages at all
   end
 end
