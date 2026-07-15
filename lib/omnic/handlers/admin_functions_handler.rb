@@ -14,8 +14,7 @@ class AdminFunctionsHandler < CommandHandler
     .usage('limitclr <command>')
     .description('Removes all channel limits for the given Command name on this Server.')
 
-  command(:inviteurl, :invite_url)
-    .permissions(:manage_server).no_args.usage('inviteurl')
+  command(:inviteurl, :invite_url).no_args.usage('inviteurl')
     .description('Generates a URL which can be used to invite this bot to a server.')
 
   command(:features, :list_features)
@@ -91,7 +90,7 @@ class AdminFunctionsHandler < CommandHandler
   end
 
   def invite_url(_event)
-    bot.invite_url
+    bot.invite_url(permission_bits: server&.bot&.highest_role&.permissions&.bits)
   end
 
   def list_features(_event)
