@@ -26,7 +26,7 @@ Scoped configuration is accessible via the `config` method, and the logger via t
 Features are required to register a name, whether it is enabled by default, and a description. Events and Commands belonging to the feature will the specify the name. The Feature list shows each Feature name and description, as well as whether it is enabled on the current server, and all Commands that belong to it. If a Feature is not enabled on a given server, no Events or Commands belonging to that Feature will be triggered.
 
 ### Events
-Events are required to register the name of the discord event and the method to be called when triggered. The method is called if the event is received, and the Feature is enabled (if any). The list of supported discord events can be found in the discordrb documentation [here](https://drb.shardlab.dev/v3.5.0/Discordrb/Events.html). The method is passed an event object when called.
+Events are required to register the name of the discord event and the method to be called when triggered. The method is called if the event is received, and the Feature is enabled (if any). The list of supported discord events can be found in the discordrb documentation [here](https://drb.shardlab.dev/v3.8.0/Discordrb/EventContainer.html). The method is passed an event object when called.
 
 It is suggested that Events also specify the following, when applicable:
 
@@ -43,7 +43,7 @@ It is suggested that Commands also specify the following, when applicable:
 - Minimum and/or maximum number of arguments accepted (or none)
 - Usage details (shown in help and if the message is not well-formed)
 - Description (shown in help)
-- Required user permissions
+- Required user permissions (list [here](https://drb.shardlab.dev/v3.8.0/Discordrb/Permissions.html))
 - Whether only the bot owner can use it
 - Rate limiting
 
