@@ -103,11 +103,11 @@ class AuditHandler < CommandHandler
     on_message(event) # Update the cache
   end
 
-  def audit(severity, message)
+  def audit(severity, context, message)
     return unless feature_enabled?(Omnic.features[:audit], server)
     return unless audit_store.channel_set?
 
-    audit_channel.send_message("***#{severity}*** - #{message}")
+    audit_channel.send_message("**#{severity}** [#{context}] #{message}")
   end
 
   private

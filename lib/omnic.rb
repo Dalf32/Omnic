@@ -130,16 +130,8 @@ module Omnic
     @cache ||= TimedCache.new(config.default_cache_time)
   end
 
-  def self.audit(_server, _severity, _message)
+  def self.audit(_server, _severity, _context, _message)
     # Default empty implementation
-  end
-
-  def self.audit_warning(server, message)
-    audit(server, 'WARNING', message)
-  end
-
-  def self.audit_error(server, message)
-    audit(server, 'ERROR', message)
   end
 
   # Private Class Methods
