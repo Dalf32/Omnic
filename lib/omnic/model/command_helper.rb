@@ -60,4 +60,12 @@ module CommandHelper
 
     "[#{obj.name}:#{obj.id}]"
   end
+
+  def audit_warning(message)
+    Omnic.audit_warning(server, message)
+  end
+
+  def audit_error(message)
+    Omnic.audit_error(server, message)
+  end
 end
