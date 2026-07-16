@@ -126,6 +126,22 @@ module Omnic
     @encryption ||= RbNaCl::SimpleBox.from_secret_key(key.force_encoding(Encoding::BINARY))
   end
 
+  def self.cache
+    @cache ||= TimedCache.new(config.default_cache_time)
+  end
+
+  def self.audit(_server, _severity, _message)
+    # Default empty implementation
+  end
+
+  def self.audit_warning(server, message)
+    audit(server, 'WARNING', message)
+  end
+
+  def self.audit_error(server, message)
+    audit(server, 'ERROR', message)
+  end
+
   # Private Class Methods
 
   def self.prefix_proc
@@ -154,10 +170,6 @@ module Omnic
 
   def self.mutexes
     @mutexes ||= {}
-  end
-
-  def self.cache
-    @cache ||= TimedCache.new(config.default_cache_time)
   end
 
   def self.setup_redis

@@ -3,6 +3,7 @@
 # AUTHOR::  Kyle Mullins
 
 require_relative 'audit/audit_store'
+require_relative 'audit/audit_ext'
 
 class AuditHandler < CommandHandler
   feature :audit, default_enabled: false,
@@ -100,6 +101,13 @@ class AuditHandler < CommandHandler
                        **data_hash)
 
     on_message(event) # Update the cache
+  end
+
+  def audit(severity, message)
+    return unless feature_enabled?(Omnic.features[:audit], server)
+    return unless audit_store.channel_set?
+
+    audit_channel.send_message("***#{severity}*** - #{message}")
   end
 
   private

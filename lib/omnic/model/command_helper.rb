@@ -37,10 +37,10 @@ module CommandHelper
     user.id == Omnic.config.owner_id
   end
 
-  def feature_enabled?(feature, event)
+  def feature_enabled?(feature, event_server)
     return true if feature.nil?
 
-    server = get_server(event)
+    server = event_server.is_a?(Discordrb::Server) ? event_server : get_server(event_server)
     return true if server.nil?
 
     feature.enabled?(Redis::Namespace.new(get_server_namespace(server),
