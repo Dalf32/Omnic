@@ -2,17 +2,25 @@
 #
 # Author::  Kyle Mullins
 
+require_relative 'admin/limits_store'
+
 class AdminFunctionsHandler < CommandHandler
   command(:limitcmd, :limit_command)
     .min_args(3).permissions(:manage_server).pm_enabled(false)
-    .usage('limitcmd <command> <allow/deny/whitelist/blacklist> <channel> [additional_channels...]')
-    .description('If the second argument is allow/whitelist, limits the given command name so that it can only be used in the listed Channel(s) on this Server; '\
-                   'if it is deny/blacklist, limits the given Command name so that it can not be used in the listed Channel(s) on this Server.')
+    .usage('limitcmd <command> <allow|deny|whitelist|blacklist> <channel_name|"role"> [role_name|other_channels...]')
+    .description('If the second argument is allow/whitelist, limits the given Command name so that it can *only* be used in the listed Channels or by someone with the Role on this Server; '\
+                   'if it is deny/blacklist, limits the given Command name so that it *cannot* be used in the listed Channels or by someone with the Role on this Server; '\
+                   'if the third argument is "role" then all subsequent text is considered as a Role name rather than Channel names.')
 
   command(:limitclr, :clear_command_limits)
     .args_range(1, 1).permissions(:manage_server).pm_enabled(false)
     .usage('limitclr <command>')
-    .description('Removes all channel limits for the given Command name on this Server.')
+    .description('Removes all Channel and Role limits for the given Command name on this Server.')
+
+  command(:cmdlimits, :show_command_limits)
+    .args_range(1, 1).permissions(:manage_server).pm_enabled(false)
+    .usage('cmdlimits <command>')
+    .description('Displays the current limits applied to the given Command name on this Server.')
 
   command(:inviteurl, :invite_url).no_args.usage('inviteurl')
     .description('Generates a URL which can be used to invite this bot to a server.')
@@ -54,39 +62,37 @@ class AdminFunctionsHandler < CommandHandler
     :admin
   end
 
-  def limit_command(event, command, allow_deny, *channel_list)
-    error_message = nil
-    error_message = 'Second parameter must be one of the following: allow, deny, whitelist, blacklist.' unless %w[allow deny whitelist blacklist].include?(allow_deny)
-    error_message = "#{command} is not a recognized command." unless bot.commands.key?(command.to_sym)
-    error_message = 'You cannot limit that command' if command == 'limitcmd'
+  def limit_command(_event, command, allow_deny, *channel_list)
+    allow_deny = allow_deny.downcase
+    return 'Second parameter must be one of the following: allow, deny, whitelist, blacklist.' unless %w[allow deny whitelist blacklist].include?(allow_deny)
+    return "#{command} is not a recognized command." unless bot.commands.key?(command.to_sym)
+    return 'You cannot limit that command' if command == 'limitcmd' || command == 'limitclr'
 
-    all_channels_valid = true
-
-    Array(channel_list).each do |channel|
-      if bot.find_channel(channel, event.server.name, type: 0).empty?
-        bot.send_temporary_message(event.channel.id, "#{channel} does not match any channels on this server", 10)
-        all_channels_valid = false
-      end
-    end
-
-    error_message = 'One or more listed channels were invalid.' unless all_channels_valid
-
-    return error_message unless error_message.nil?
-
-    channel_ids = channel_list.map { |channel_name| bot.find_channel(channel_name, event.server.name, type: 0) }.flatten.map(&:id)
-
-    if %w[allow whitelist].include?(allow_deny)
-      whitelist_channels(command, channel_ids)
+    if channel_list.first.casecmp?('role')
+      limit_by_role(command, allow_deny, channel_list[1..-1].join(' '))
     else
-      blacklist_channels(command, channel_ids)
+      limit_by_channel(command, allow_deny, channel_list)
     end
   end
 
   def clear_command_limits(_event, command)
     return "'#{command}' is not a recognized command." unless bot.commands.key?(command.to_sym)
 
-    clear_lists(command)
+    limits_store.clear_limits(command)
     "All limits cleared for command '#{command}'"
+  end
+
+  def show_command_limits(_event, command)
+    return "'#{command}' is not a recognized command." unless bot.commands.key?(command.to_sym)
+
+    <<~LIMITS
+      Channels
+        Whitelist: #{limits_store.whitelisted_channels(command).map { |id| bot.channel(id, server)&.name }.compact.join(', ')}
+        Blacklist: #{limits_store.blacklisted_channels(command).map { |id| bot.channel(id, server)&.name }.compact.join(', ')}
+      Roles
+        Whitelist: #{limits_store.whitelisted_roles(command).map { |id| server.role(id)&.name }.compact.join(', ')}
+        Blacklist: #{limits_store.blacklisted_roles(command).map { |id| server.role(id)&.name }.compact.join(', ')}
+    LIMITS
   end
 
   def invite_url(_event)
@@ -172,27 +178,54 @@ class AdminFunctionsHandler < CommandHandler
     Redis::Namespace.new(get_server_namespace(@server), redis: Omnic.redis)
   end
 
+  def limits_store
+    @limits_store ||= LimitsStore.new(server_redis)
+  end
+
+  def limit_by_role(command, allow_deny, role_name)
+    return 'Role name not provided.' if role_name.empty?
+
+    found_role = server.roles.find { |r| r.name.casecmp?(role_name) }
+    return "#{role_name} does not match any roles on this server." if found_role.nil?
+
+    return whitelist_role(command, found_role.id) if is_whitelist(allow_deny)
+    blacklist_role(command, found_role.id)
+  end
+
+  def limit_by_channel(command, allow_deny, channel_list)
+    channels = channel_list.map { |channel| find_channel(channel) }
+    not_found_channels = channels.select(&:failure?)
+    return not_found_channels.map(&:error).join("\n") if not_found_channels.any?
+
+    channel_ids = channels.map { |found_channel| found_channel.value.id }
+
+    return whitelist_channels(command, channel_ids) if is_whitelist(allow_deny)
+
+    blacklist_channels(command, channel_ids)
+  end
+
   def whitelist_channels(command, channel_ids)
-    server_redis.sadd(whitelist_key(command), channel_ids)
+    limits_store.whitelist_channels(command, channel_ids)
     "#{channel_ids.count} channel#{channel_ids.count == 1 ? '' : 's'} added to whitelist for command #{command}"
   end
 
   def blacklist_channels(command, channel_ids)
-    server_redis.sadd(blacklist_key(command), channel_ids)
+    limits_store.blacklist_channels(command, channel_ids)
     "#{channel_ids.count} channel#{channel_ids.count == 1 ? '' : 's'} added to blacklist for command #{command}"
   end
 
-  def clear_lists(command)
-    server_redis.del(whitelist_key(command))
-    server_redis.del(blacklist_key(command))
+  def whitelist_role(command, role_id)
+    limits_store.whitelist_role(command, role_id)
+    "1 role added to whitelist for command #{command}"
   end
 
-  def whitelist_key(command)
-    "channel_whitelist:#{command}"
+  def blacklist_role(command, role_id)
+    limits_store.blacklist_role(command, role_id)
+    "1 role added to blacklist for command #{command}"
   end
 
-  def blacklist_key(command)
-    "channel_blacklist:#{command}"
+  def is_whitelist(allow_deny)
+    %w[allow whitelist].include?(allow_deny)
   end
 
   def set_alias(command_name, alias_name)

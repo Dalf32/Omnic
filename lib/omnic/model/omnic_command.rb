@@ -3,6 +3,7 @@
 # AUTHOR::  Kyle Mullins
 
 require_relative 'command_helper'
+require_relative '../handlers/admin/limits_store'
 
 class OmnicCommand
   include CommandHelper
@@ -116,9 +117,15 @@ class OmnicCommand
         next
       end
 
-      unless command_allowed?(@name, trig_event)
+      unless cmd_allowed_in_channel?(@name, trig_event)
         Omnic.logger.debug('  Command not run because it is not allowed in this channel')
         trig_event.message.reply("Command #{@name} is not allowed in this channel.")
+        next
+      end
+
+      unless cmd_allowed_by_roles?(@name, trig_event)
+        Omnic.logger.debug("  Command not run because it is not allowed to be used by user's roles")
+        trig_event.message.reply("Command #{@name} is not allowed to be used by your roles.")
         next
       end
 
@@ -141,25 +148,27 @@ class OmnicCommand
     !@error.nil?
   end
 
-  def command_allowed?(command, triggering_event)
+  def limits_store(server)
+    LimitsStore.new(Redis::Namespace.new("#{get_server_namespace(server)}:admin", redis: Omnic.redis))
+  end
+
+  def cmd_allowed_in_channel?(command, triggering_event)
     server = get_server(triggering_event)
     return true if server.nil?
 
-    key_template = "#{get_server_namespace(server)}:admin:%{type}:#{command}"
-    channel_whitelist_key = format(key_template, type: 'channel_whitelist')
-    channel_blacklist_key = format(key_template, type: 'channel_blacklist')
     channel = get_channel(triggering_event)
+    return true if channel.nil?
 
-    unless channel.nil?
-      if Omnic.redis.exists?(channel_whitelist_key) &&
-         !Omnic.redis.sismember(channel_whitelist_key, channel.id.to_s)
-        return false
-      elsif Omnic.redis.exists?(channel_blacklist_key) &&
-            Omnic.redis.sismember(channel_blacklist_key, channel.id.to_s)
-        return false
-      end
-    end
+    limits_store(server).allowed_in_channel?(command, channel.id)
+  end
 
-    true
+  def cmd_allowed_by_roles?(command, triggering_event)
+    server = get_server(triggering_event)
+    return true if server.nil?
+
+    user = get_user(triggering_event)
+    return true if user.nil?
+
+    limits_store(server).allowed_by_roles?(command, user.roles.map(&:id))
   end
 end
