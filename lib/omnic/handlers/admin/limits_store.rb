@@ -39,6 +39,11 @@ class LimitsStore
     @redis.smembers(limitset_key(ROLE, BLACKLIST, command))
   end
 
+  def limited_commands
+    @redis.scan_each(match: '*_*list:*').to_a.map { |key| key.split(':').last }
+          .uniq.sort
+  end
+
   def clear_limits(command)
     @redis.del(limitset_key(CHANNEL, WHITELIST, command))
     @redis.del(limitset_key(CHANNEL, BLACKLIST, command))

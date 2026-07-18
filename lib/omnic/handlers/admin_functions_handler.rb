@@ -18,9 +18,9 @@ class AdminFunctionsHandler < CommandHandler
     .description('Removes all Channel and Role limits for the given Command name on this Server.')
 
   command(:cmdlimits, :show_command_limits)
-    .args_range(1, 1).permissions(:manage_server).pm_enabled(false)
-    .usage('cmdlimits <command>')
-    .description('Displays the current limits applied to the given Command name on this Server.')
+    .args_range(0, 1).permissions(:manage_server).pm_enabled(false)
+    .usage('cmdlimits [command]')
+    .description('Displays the current limits applied to the given Command name on this Server or which Commands are limited.')
 
   command(:inviteurl, :invite_url).no_args.usage('inviteurl')
     .description('Generates a URL which can be used to invite this bot to a server.')
@@ -82,7 +82,12 @@ class AdminFunctionsHandler < CommandHandler
     "All limits cleared for command '#{command}'"
   end
 
-  def show_command_limits(_event, command)
+  def show_command_limits(event, command = nil)
+    if command.nil?
+      event.channel.start_typing
+      return "Limited Commands: #{limits_store.limited_commands.join(', ')}"
+    end
+
     return "'#{command}' is not a recognized command." unless bot.commands.key?(command.to_sym)
 
     <<~LIMITS
