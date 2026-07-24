@@ -12,7 +12,9 @@ class ReminderHandler < CommandHandler
     .feature(:reminders).min_args(1).usage('remindmein <time_expr>')
     .description('Reminds you of something in the given amount of time.')
 
-  # TODO: command :remindmeat
+  command(:remindmeat, :remind_me_at)
+    .feature(:reminders).args_range(1, 1).usage('remindmeat <timestamp>')
+    .description('Reminds you of something at the given time.')
 
   event :ready, :start_reminder_thread
 
@@ -27,10 +29,28 @@ class ReminderHandler < CommandHandler
   def remind_me_in(event, *time_expr)
     time_str = time_expr.join(' ')
     time_secs = ChronicDuration.parse(time_str, keep_zero: true).truncate
-    return "Invalid time: #{time_str}" if time_secs.zero?
-    return "Time too large: #{time_str}" if time_secs >= 2_147_483_647
+    valid_time = validate_time(time_str, time_secs)
+    return valid_time.error unless valid_time.success?
 
-    prompt_for_message(event, time_secs)
+    reminder_text = prompt_for_message(event.message)
+    return 'No message provided.' if reminder_text.nil?
+
+    create_reminder(event.message.id, time_secs, event.author, reminder_text)
+    confirm_message(time_secs)
+  end
+
+  def remind_me_at(event, timestamp)
+    timestamp_match = /<t:(\d+)(:[tTdDfFsSR])?>/.match(timestamp)
+    time_secs = timestamp_match.nil? ? 0 : (Time.at(timestamp_match[1].to_i) - Time.now).to_i
+
+    valid_time = validate_time(timestamp, time_secs)
+    return valid_time.error unless valid_time.success?
+
+    reminder_text = prompt_for_message(event.message)
+    return 'No message provided.' if reminder_text.nil?
+
+    create_reminder(event.message.id, time_secs, event.author, reminder_text)
+    confirm_message(time_secs)
   end
 
   def start_reminder_thread(_event)
@@ -49,17 +69,18 @@ class ReminderHandler < CommandHandler
     end
   end
 
-  def prompt_for_message(event, time_secs)
-    max_wait_time = config.key?(:max_response_time) ? config.max_response_time : 300
+  def prompt_for_message(message)
+    max_wait_time = config.key?(:max_response_time) ? config.max_response_time : 60
 
-    event.message.reply('What would you like your reminder to say?')
-    reminder_text = event.message.await!(timeout: max_wait_time)&.text
-    return nil if reminder_text.nil?
+    message.reply('What would you like your reminder to say?')
+    message.await!(timeout: max_wait_time)&.text
+  end
 
-    create_reminder(event.message.id, time_secs, event.author, reminder_text)
+  def validate_time(time_str, time_secs)
+    error_message = "Invalid time: #{time_str}" unless time_secs.positive?
+    error_message = "Time too large: #{time_str}" if time_secs >= 2_147_483_647
 
-    pretty_time = ChronicDuration.output(time_secs)
-    "OK, got it! I'll remind you in #{pretty_time}"
+    Result.new(error: error_message)
   end
 
   def create_reminder(reminder_id, time_secs, user, message)
@@ -71,12 +92,15 @@ class ReminderHandler < CommandHandler
     global_redis.sadd('ids', reminder_id)
   end
 
-  def send_reminder(reminder_id)
-    reminder_details = Hash[*global_redis.hgetall("details:#{reminder_id}").flatten]
-    user = bot.user(reminder_details['user_id'])
+  def confirm_message(time_secs)
+    "OK, got it! I'll remind you in #{ChronicDuration.output(time_secs)}"
+  end
 
+  def send_reminder(reminder_id)
     return unless bot.connected?
 
+    reminder_details = Hash[*global_redis.hgetall("details:#{reminder_id}").flatten]
+    user = bot.user(reminder_details['user_id'])
     log.info("Sending reminder to User [#{user.name}:#{user.id}]")
 
     message = reminder_details['message'].encode('utf-8-hfs', 'utf-8')
@@ -87,7 +111,7 @@ class ReminderHandler < CommandHandler
   end
 
   def sleep_reminder_thread
-    sleep_time = config.key?(:sleep_interval) ? config.sleep_interval : 5
+    sleep_time = config.key?(:sleep_interval) ? config.sleep_interval : 60
 
     log.debug("Sleeping Reminders thread for #{sleep_time}s")
 
